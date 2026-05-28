@@ -49,6 +49,9 @@ app.use(logger('dev'))
 app.get('/',(req,res)=>{
     res.send('Welcome to Finder App Backend');
 });
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', service: 'finder-backend' });
+});
 app.use('/api/v1', routes);
 
 // Global Error Handler to log errors explicitly

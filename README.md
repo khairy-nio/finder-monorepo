@@ -1,71 +1,188 @@
 # Finder App
 
-Finder App is an intelligent, cross-platform solution designed to seamlessly connect people who have lost items with those who have found them. The platform leverages advanced AI image matching to automatically pair lost item reports with found item listings, enabling rapid and secure recovery.
+Finder App is an intelligent cross-platform platform designed to connect people who lost items with people who found them. The system uses AI-powered image matching to automatically compare lost and found item reports and improve recovery speed and accuracy.
 
 ---
 
-## 🌟 Main Features
+# 🌟 Features
 
-* AI-Powered Matching: Utilizes the CLIP model to accurately compare and match images of lost and found items.
-* Real-Time Communication: Instant messaging via Socket.IO allowing users to coordinate item recovery securely.
-* Geolocation & Mapping: Interactive maps to pinpoint exactly where items were lost or found.
-* Moderation Dashboard: Centralized admin portal to manage users, monitor posts, and review AI matching results.
-* Secure Authentication: Robust user authentication ensuring a safe environment for all interactions.
+### AI-Powered Matching
+Uses CLIP-based image embeddings to compare and match lost and found item images.
 
----
+### Real-Time Communication
+Socket.IO-powered real-time messaging between users for secure recovery coordination.
 
-## 🏗 Monorepo Structure
+### Geolocation & Maps
+Location-aware reports and map integration to identify where items were lost or found.
 
-This repository is organized as a multi-service monorepo, cleanly separating the system's core components:
+### Admin Dashboard
+Dedicated moderation dashboard for platform administration, post monitoring, and user management.
 
-* backend-service/ — Core API server managing database operations, business logic, and real-time Socket.IO events.
-* ai-service/ — Dedicated Python Flask microservice handling heavy-lifting AI image embeddings using the CLIP architecture.
-* admin-service/ — React & Vite-powered web dashboard for platform administrators.
-* mobile-app/ — Cross-platform Flutter mobile application serving as the primary user interface.
+### Authentication & Security
+Secure authentication and protected platform access.
 
 ---
 
-## 💻 Tech Stack
+# 🏗 Monorepo Structure
 
-### Frontend
-* Mobile: Flutter, Dart
-* Admin Web: React, Vite
+The project is organized as a clean multi-service monorepo:
 
-### Backend & AI
-* Core API: Node.js, Express.js
-* Real-time: Socket.IO
-* AI Microservice: Python, Flask, PyTorch, OpenAI CLIP model
+text finder-monorepo/ │ ├── backend-service/ ├── ai-service/ ├── admin-service/ ├── mobile-app/ ├── README.md └── README_DEPLOY.md 
 
-### Data & Infrastructure
-* Databases: PostgreSQL, Pinecone
-* ORM: Sequelize
+### Services
+
+### backend-service
+Node.js + Express backend handling:
+
+- APIs
+- Business logic
+- Database communication
+- Socket.IO events
+
+### ai-service
+Python Flask AI microservice responsible for:
+
+- CLIP embeddings
+- Image comparison
+- AI matching logic
+
+### admin-service
+React + Vite web dashboard used for:
+
+- Admin moderation
+- Monitoring reports
+- Managing users
+- Reviewing matches
+
+### mobile-app
+Flutter mobile application serving as the primary user-facing platform.
 
 ---
 
-## 🚀 Local Setup Commands
+# 💻 Tech Stack
 
-bash # 1. Clone the repository git clone <repository_url> cd finder-monorepo  # 2. Setup Backend Service cd backend-service npm install npm run dev  # 3. Setup AI Service cd ../ai-service pip install -r requirements.txt python main_flask.py  # 4. Setup Admin Dashboard cd ../admin-service npm install npm run dev  # 5. Setup Mobile App cd ../mobile-app flutter pub get flutter run 
+## Frontend
 
-> Configure required .env files before starting services.
+### Mobile
+- Flutter
+- Dart
+
+### Admin Dashboard
+- React
+- Vite
+- Material UI
 
 ---
 
-## 🔐 Admin Dashboard Demo Login
+## Backend & AI
+
+### Backend API
+- Node.js
+- Express.js
+
+### Real-Time
+- Socket.IO
+
+### AI Service
+- Python
+- Flask
+- PyTorch
+- OpenAI CLIP
+
+---
+
+## Data Layer
+
+- PostgreSQL
+- Pinecone Vector Database
+- Sequelize ORM
+
+---
+
+# 🚀 Local Development Setup
+
+Clone repository:
+
+bash git clone <repository_url> cd finder-monorepo 
+
+---
+
+## Backend Service
+
+bash cd backend-service npm install npm run dev 
+
+---
+
+## AI Service
+
+bash cd ai-service pip install -r requirements.txt python main_flask.py 
+
+---
+
+## Admin Dashboard
+
+bash cd admin-service npm install npm run dev 
+
+Local dashboard:
+
+text http://localhost:5173 
+
+or
+
+text http://localhost:5174 
+
+depending on available ports.
+
+---
+
+## Mobile App
+
+bash cd mobile-app flutter pub get flutter run 
+
+---
+
+# 🔐 Admin Dashboard Demo Login
 
 For local testing or offline development mode:
 
-Admin Email
+### Email
+
 text admin@example.com 
 
-Admin Password
+### Password
+
 text admin123 
 
-> Demo credentials are intended for development/testing environments only.
+> Demo credentials are intended for development and testing only.
 
 ---
 
-## 📦 Deployment Note
+# 🌐 Live Admin Dashboard
 
-For production deployment instructions, Railway/Vercel setup, and required environment variables, refer to:
+Vercel deployment:
 
-README_DEPLOY.md
+text https://finder-admin-dashboard.vercel.app 
+
+Use the demo admin credentials above to access the dashboard.
+
+---
+
+# 📦 Deployment
+
+Deployment instructions, environment variables, and multi-service deployment setup are documented in:
+
+text README_DEPLOY.md 
+
+---
+
+# 📌 Development Notes
+
+- Configure required .env files before running services.
+- Keep secrets and API keys outside version control.
+- Do not commit production credentials.
+
+---
+
+# 👨‍💻 Project Overview
+
+Finder combines AI matching, real-time communication, and modern cross-platform architecture to simplify lost-and-found recovery while providing administrators with centralized moderation and monitoring tools

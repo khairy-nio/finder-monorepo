@@ -1,0 +1,1604 @@
+
+================================================================================
+                        WHAT IS THIS FILE?
+================================================================================
+
+📄 PURPOSE OF THIS DOCUMENT:
+This is a comprehensive technical specification document that contains EVERYTHING
+about the Finder App backend system. It's designed to be:
+
+✅ Self-contained - No need to read the code to understand the system
+✅ Portable - Can be shared with other developers or AI assistants
+✅ Complete - Covers architecture, API, flows, database, security, setup
+✅ Reference Guide - Use it to understand any part of the system
+
+🎯 WHO SHOULD USE THIS:
+- New developers joining the project (onboarding)
+- AI assistants helping with development
+- DevOps engineers for deployment
+- Frontend developers integrating with the API
+- Technical reviewers or stakeholders
+- Future maintainers of the codebase
+
+📖 HOW TO USE THIS DOCUMENT:
+1. START HERE: Read sections 1-3 for high-level overview
+2. UNDERSTANDING: Read section 9 (Data Flow Diagrams) to see how it works
+3. API REFERENCE: Section 6 has all endpoints with examples
+4. SETUP: Section 13 has step-by-step installation guide
+5. SPECIFIC TOPICS: Use Table of Contents to jump to any section
+
+⚡ QUICK START GUIDE:
+If you're continuing development or helping with implementation:
+1. Read "PROJECT OVERVIEW" (Section 1) - Understand the concept
+2. Read "ARCHITECTURE PATTERN" (Section 3) - Understand the structure
+3. Read "DATA FLOW DIAGRAMS" (Section 9) - See how features work
+4. Jump to "FEATURES IMPLEMENTED" (Section 8) - See what's done/pending
+5. If implementing Socket.io: Read Section 10 (Socket.io Architecture)
+
+🔍 WHAT'S ALREADY BUILT:
+✅ User authentication & two-tier verification system
+✅ Post management with image uploads
+✅ AI-powered visual matching (CLIP + Pinecone)
+✅ Contact request system with auto-chat creation
+✅ Complete chat system (REST API)
+✅ Admin verification approval workflow
+✅ Comprehensive validation layer
+✅ Security middleware (Firebase + verification checks)
+
+🚧 WHAT'S NEXT:
+⏳ Socket.io integration for real-time chat (plan in Section 10)
+⏳ Notification system (TODOs marked in code)
+⏳ Report system for content moderation
+⏳ Advanced features (ratings, analytics, etc.)
+
+💡 KEY CONCEPTS TO UNDERSTAND:
+1. TWO-TIER SECURITY: Users can browse (authenticated) but need admin 
+   approval (verified) to perform actions like posting or chatting.
+
+2. AI MATCHING: Uses CLIP neural network to convert images to vectors,
+   then finds similar items using Pinecone vector database + location filters.
+
+3. HYBRID CHAT: REST API stores messages (persistence), Socket.io will
+   deliver them in real-time (instant delivery).
+
+4. AUTO-CHAT CREATION: When a contact request is accepted, a chat is
+   automatically created between the two users.
+
+5. SORTED USER IDS: Chats use sorted user IDs (smaller, larger) to prevent
+   duplicate chat rooms between the same two users.
+
+================================================================================
+                            TABLE OF CONTENTS
+================================================================================
+1. PROJECT OVERVIEW
+2. TECH STACK & DEPENDENCIES
+3. ARCHITECTURE PATTERN
+4. FILE STRUCTURE
+5. DATABASE SCHEMA
+6. API ENDPOINTS
+7. AUTHENTICATION & SECURITY
+8. FEATURES IMPLEMENTED
+9. DATA FLOW DIAGRAMS
+10. SOCKET.IO ARCHITECTURE (PLANNED)
+11. DEPENDENCIES & INTEGRATIONS
+12. ENVIRONMENT VARIABLES
+13. SETUP INSTRUCTIONS
+
+================================================================================
+                    PROJECT AT A GLANCE - VISUAL OVERVIEW
+================================================================================
+
+🏗️ SYSTEM ARCHITECTURE (SIMPLIFIED):
+
+   Frontend (React/Vue)
+          ↕ (HTTP + Firebase Token)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │         EXPRESS SERVER (Port 3500)      │
+   │                                          │
+   │  Routes → Controllers → Services        │
+   │           → Repository → Database       │
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          ↕                ↕              ↕
+   PostgreSQL         Cloudinary      Pinecone
+   (Supabase)         (Images)        (AI Vectors)
+
+📦 MAIN COMPONENTS:
+
+   ┌─ config/              # External service configurations
+   │  ├─ firebase.config.js
+   │  ├─ pinecone.config.js
+   │  ├─ cloudinary.config.js
+   │  └─ ai.config.js
+   │
+   ┌─ models/              # Database table definitions (Sequelize)
+   │  ├─ User.model.js
+   │  ├─ post.model.js
+   │  ├─ Chat.model.js
+   │  └─ Message.model.js
+   │
+   ┌─ Repository/          # Database queries (Data Access Layer)
+   │  ├─ user.repo.js
+   │  ├─ post.repo.js
+   │  └─ chat.repo.js
+   │
+   ┌─ services/            # Business logic
+   │  ├─ user.service.js
+   │  ├─ matching.service.js
+   │  └─ chat.service.js
+   │
+   ┌─ Controllers/         # Request/Response handling
+   │  ├─ User.controller.js
+   │  ├─ post.controller.js
+   │  └─ chat.controller.js
+   │
+   ┌─ Routes/              # API endpoints
+   │  ├─ user.route.js
+   │  ├─ post.route.js
+   │  └─ chat.route.js
+   │
+   ┌─ Middlewares/         # Security & validation
+   │  ├─ auth.middleware.js        (Firebase token)
+   │  ├─ isVerfied.middleware.js   (Two-tier check)
+   │  └─ chat.middleware.js        (Participant check)
+   │
+   └─ validators/          # Input validation rules
+      ├─ post.validator.js
+      └─ chat.validator.js
+
+🔑 KEY FILES TO KNOW:
+
+   server.js               → Main entry point, starts Express server
+   loaders/sys_req.js     → Initializes all system dependencies
+   models/index.js        → Defines database relationships
+   Routes/app.route.js    → Main router that combines all routes
+   utils/response.util.js → Standardized API responses
+
+🗄️ DATABASE TABLES (CORE):
+
+   users                  → User accounts & verification data
+   posts                  → Lost/found items with images
+   chats                  → Chat rooms between two users
+   messages               → Chat messages
+   contact_requests       → Connection requests between users
+   embedding_references   → Links posts to Pinecone vectors
+
+🔐 SECURITY LAYERS:
+
+   1. Firebase Token      → Validates user identity
+   2. requireAuthentication → Can browse (read-only)
+   3. requireVerification → Can perform actions (verified users only)
+   4. Chat Participant    → Can only access own chats
+   5. Input Validation    → All inputs validated with express-validator
+
+🚀 HOW A REQUEST FLOWS:
+
+   1. Client sends: Authorization: Bearer <firebase-token>
+   2. auth.middleware verifies token → attaches req.user
+   3. isVerified.middleware checks verification status
+   4. validator validates input (express-validator)
+   5. Controller extracts data → calls Service
+   6. Service implements business logic → calls Repository
+   7. Repository queries database → returns data
+   8. Service formats response
+   9. Controller sends JSON response to client
+
+🎯 CORE FEATURES WORKFLOW:
+
+   POST CREATION:
+   Upload Image → Cloudinary stores it → Create post in DB → 
+   Generate CLIP embedding → Store vector in Pinecone → Post is searchable
+
+   AI MATCHING:
+   Upload Image → Generate CLIP embedding → Query Pinecone for similar vectors →
+   Filter by location (40km) → Score results → Return matches
+
+   CONTACT & CHAT:
+   Send contact request → Receiver accepts → Auto-create chat →
+   Users can send messages via REST API → (Future: Real-time via Socket.io)
+
+================================================================================
+                            1. PROJECT OVERVIEW
+================================================================================
+
+🎯 THE PROBLEM WE SOLVE:
+
+Every day, millions of people lose valuable items - phones, wallets, keys, pets,
+bags, jewelry, documents. The current solutions are fragmented:
+- Lost & Found centers (physical only, limited reach)
+- Social media posts (no organization, hard to search)
+- Generic classified sites (not specialized, no smart matching)
+
+The biggest challenge: "I found a phone, but how do I find who lost it?"
+Or: "I lost my wallet, is anyone posting about finding one like mine?"
+
+🚀 OUR SOLUTION: FINDER APP
+
+Finder App is an AI-powered Lost & Found platform that automatically matches
+lost items with found items using visual similarity and location. Think of it
+as "Tinder for Lost Items" - swipe through AI-suggested matches!
+
+📱 HOW IT WORKS (USER PERSPECTIVE):
+
+SCENARIO 1: You Lost Something
+1. You lost your backpack on the bus
+2. Open Finder App → Take/upload photo of similar backpack
+3. Post as "LOST" with location details
+4. AI searches all "FOUND" posts for visually similar items
+5. Get instant matches of similar backpacks found nearby
+6. Send contact request to the finder
+7. Chat directly to verify and arrange return
+
+SCENARIO 2: You Found Something
+1. You find a phone in a park
+2. Open Finder App → Take photo of the phone
+3. Post as "FOUND" with location details
+4. AI searches all "LOST" posts for visually similar phones
+5. Get matches of people who lost similar phones nearby
+6. Wait for contact request from the owner
+7. Chat to verify ownership and arrange return
+
+🧠 THE AI MAGIC:
+
+Instead of typing descriptions like "black iPhone with cracked screen",
+the AI looks at the actual IMAGE and finds visually similar items:
+- Same color patterns
+- Similar shapes and designs
+- Matching brand/model characteristics
+- Visual damage patterns
+
+Combined with LOCATION filtering:
+- Must be in same country
+- Preferably same city
+- Within 40km radius if GPS coordinates provided
+
+This means: Even if you can't describe your item well, the AI will find it!
+
+🔐 SAFETY & TRUST:
+
+TWO-TIER VERIFICATION SYSTEM:
+1. TIER 1 (Authenticated): Browse posts, see matches (read-only)
+2. TIER 2 (Identity Verified): Post items, contact others, chat
+   - Submit National ID + Phone + ID Photo
+   - Admin reviews and approves
+   - Only verified users can interact
+
+Why? Prevent scams, ensure accountability, build trust.
+
+💡 KEY FEATURES:
+- AI-powered visual matching using CLIP neural network
+- Location-based filtering (40km radius)
+- Identity verification (admin approval required)
+- Contact request system (like LinkedIn connections)
+- In-app chat (REST API now, real-time Socket.io coming soon)
+- Image upload with Cloudinary CDN
+- Vector similarity search with Pinecone
+- Admin verification management dashboard
+
+🎭 USER ROLES:
+
+REGULAR USER (Verified):
+- Create lost/found posts with images
+- Search for similar items using AI
+- Send contact requests to other users
+- Chat with matched users
+- Manage own posts
+
+ADMIN:
+- Review identity verification documents
+- Approve/reject user verifications
+- Manage all users (view, delete)
+- Manage all posts (edit, delete)
+- Monitor system activity
+
+📊 TYPICAL WORKFLOW:
+
+1. USER REGISTRATION & VERIFICATION (One-time, 24-48 hours)
+   Register → Submit ID documents → Admin reviews → ✅ Verified
+
+2. POST CREATION (2 minutes)
+   Take photo → Fill details (title, category, location) → 
+   AI generates embedding → Post published → Searchable
+
+3. AI MATCHING (Instant)
+   Upload photo → AI finds similar items → 
+   Filters by location → Ranks by similarity → Shows matches
+
+4. CONTACT & CHAT (Few minutes)
+   Send request → Owner accepts → Chat auto-created → 
+   Verify details → Arrange meetup
+
+5. ITEM RETURN (Offline)
+   Meet in person → Verify item → Return item → 
+   Close post (mark as "Resolved")
+
+🌟 UNIQUE SELLING POINTS:
+
+1. AI-POWERED: No need to write long descriptions
+2. VISUAL SEARCH: Upload photo, get matches instantly
+3. LOCATION-AWARE: Only shows nearby matches (40km)
+4. VERIFIED USERS: Identity verification for safety
+5. DIRECT CHAT: No phone numbers exposed until trust established
+6. AUTO-MATCHING: Proactive suggestions, not just search
+7. SPECIALIZED: Built specifically for lost & found (not generic classifieds)
+
+🎯 TARGET USERS:
+
+- People who lost valuable items (phones, wallets, pets, bags)
+- Good Samaritans who found items and want to return them
+- Universities/Companies who manage lost & found departments
+- Public transport authorities
+- Event organizers (concerts, conferences)
+
+💰 POTENTIAL REVENUE STREAMS (Future):
+
+- Premium features (priority matching, extended history)
+- Reward system (finders get paid by owners)
+- Enterprise plans (universities, companies)
+- Advertisement (related services: locksmiths, phone repair)
+
+🔮 VISION:
+
+Become the global standard for lost & found, reducing waste by helping
+millions of items find their way back home instead of ending up in trash.
+
+CORE CONCEPT (Technical):
+1. User loses an item → Posts "Lost" with image
+2. Another user finds an item → Posts "Found" with image
+3. AI matches similar items visually + location filtering
+4. Users send contact requests
+5. If accepted, auto-creates chat
+6. Users coordinate item return
+
+================================================================================
+                        2. TECH STACK & DEPENDENCIES
+================================================================================
+
+BACKEND FRAMEWORK:
+- Node.js (Runtime)
+- Express.js v5.2.1 (Web Framework)
+
+DATABASE:
+- PostgreSQL (Supabase hosted)
+- Sequelize ORM v6.37.7
+
+AUTHENTICATION:
+- Firebase Admin SDK v13.6.0
+- Firebase Auth (frontend)
+
+AI & VECTOR SEARCH:
+- Pinecone v6.1.3 (Vector Database)
+- CLIP Model (512-dimensional embeddings)
+- Axios v1.13.2 (API calls to CLIP service)
+
+FILE UPLOAD:
+- Cloudinary v2.9.0 (Image hosting & CDN)
+- Multer v2.0.2 (File upload middleware)
+
+VALIDATION:
+- express-validator v7.3.1 (Input validation)
+
+REAL-TIME (PLANNED):
+- Socket.io v4.8.3 (Real-time chat)
+
+OTHER:
+- dotenv v17.2.3 (Environment variables)
+- cors v2.8.5 (Cross-origin resource sharing)
+- morgan v1.10.1 (HTTP request logging)
+- pg v8.17.1 (PostgreSQL driver)
+
+DEV DEPENDENCIES:
+- nodemon v3.1.11 (Auto-restart on file changes)
+
+================================================================================
+                        3. ARCHITECTURE PATTERN
+================================================================================
+
+LAYERED ARCHITECTURE:
+┌─────────────────────────────────────────────────────────────┐
+│                         CLIENT                               │
+│                  (Frontend - React/Vue)                      │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTP/REST + WebSocket
+┌────────────────────────▼────────────────────────────────────┐
+│                        ROUTES                                │
+│            (API Endpoints + Middleware)                      │
+│  • Authentication Middleware (Firebase Token)                │
+│  • Verification Middleware (Two-tier)                        │
+│  • Validation Middleware (express-validator)                 │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                      CONTROLLERS                             │
+│            (Request/Response Handling)                       │
+│  • Extract params/body/query                                 │
+│  • Call service methods                                      │
+│  • Return standardized responses                             │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                       SERVICES                               │
+│                (Business Logic Layer)                        │
+│  • Validation logic                                          │
+│  • Business rules                                            │
+│  • Orchestrate multiple repositories                         │
+│  • Format responses                                          │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                     REPOSITORY                               │
+│              (Data Access Layer - DAL)                       │
+│  • Direct database queries                                   │
+│  • Sequelize ORM operations                                  │
+│  • No business logic                                         │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                       DATABASE                               │
+│                 PostgreSQL (Supabase)                        │
+│  • Users, Posts, Chats, Messages, ContactRequests            │
+└─────────────────────────────────────────────────────────────┘
+
+EXTERNAL SERVICES:
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│   Firebase   │  │  Cloudinary  │  │   Pinecone   │
+│     Auth     │  │    Images    │  │    Vectors   │
+└──────────────┘  └──────────────┘  └──────────────┘
+
+DESIGN PATTERNS USED:
+1. Repository Pattern (Data Access)
+2. Service Layer Pattern (Business Logic)
+3. Middleware Pattern (Express)
+4. Singleton Pattern (Service instances)
+5. Factory Pattern (Model definitions)
+
+================================================================================
+                            4. FILE STRUCTURE
+================================================================================
+
+Finder_App/
+│
+├── server.js                           # Main entry point
+│
+├── loaders/
+│   └── sys_req.js                      # System initialization loader
+│
+├── config/
+│   ├── firebase.config.js              # Firebase Admin SDK
+│   ├── pinecone.config.js              # Pinecone client
+│   ├── cloudinary.config.js            # Cloudinary config
+│   └── ai.config.js                    # CLIP API configuration
+│
+├── db/
+│   ├── postgres.js                     # PostgreSQL connection
+│   └── Sequelize.js                    # Sequelize instance
+│
+├── models/
+│   ├── index.js                        # Model associations
+│   ├── User.model.js                   # User entity
+│   ├── post.model.js                   # Post entity
+│   ├── Chat.model.js                   # Chat entity
+│   ├── Message.model.js                # Message entity
+│   ├── ContactRequest.model.js         # ContactRequest entity
+│   ├── Notification.model.js           # Notification entity
+│   ├── Report.model.js                 # Report entity
+│   ├── AdminAction.model.js            # AdminAction entity
+│   ├── EmbeddingReference.model.js     # Pinecone reference
+│   └── UserVerification.model.js       # Verification records
+│
+├── Repository/
+│   ├── user.repo.js                    # User data access
+│   ├── post.repo.js                    # Post data access
+│   ├── chat.repo.js                    # Chat data access
+│   └── contact_req.repo.js             # ContactRequest data access
+│
+├── services/
+│   ├── user.service.js                 # User business logic
+│   ├── auth.service.js                 # Authentication logic
+│   ├── post.service.js                 # Post business logic
+│   ├── matching.service.js             # AI matching logic
+│   ├── chat.service.js                 # Chat business logic
+│   ├── contact_req.service.js          # Contact request logic
+│   └── admin.service.js                # Admin operations
+│
+├── Controllers/
+│   ├── User.controller.js              # User endpoints
+│   ├── auth.controller.js              # Auth endpoints
+│   ├── post.controller.js              # Post endpoints
+│   ├── matching.controller.js          # Matching endpoints
+│   ├── chat.controller.js              # Chat endpoints
+│   ├── ContactReq.controller.js        # Contact request endpoints
+│   └── admin.controller.js             # Admin endpoints
+│
+├── Routes/
+│   ├── app.route.js                    # Main router
+│   ├── user.route.js                   # User routes
+│   ├── post.route.js                   # Post routes
+│   ├── matching.route.js               # Matching routes
+│   ├── chat.route.js                   # Chat routes
+│   ├── contactReq.route.js             # Contact request routes
+│   └── admin.route.js                  # Admin routes
+│
+├── Middlewares/
+│   ├── auth.middleware.js              # Firebase token verification
+│   ├── isVerfied.middleware.js         # Two-tier verification
+│   ├── isAdmin.middleware.js           # Admin role check
+│   ├── multer.middleware.js            # File upload handling
+│   ├── chat.middleware.js              # Chat participant verification
+│   └── validation.js                   # Validation result handler
+│
+├── validators/
+│   ├── user.validator.js               # User input validation
+│   ├── post.validator.js               # Post input validation
+│   ├── matching.validator.js           # Matching input validation
+│   ├── chat.validator.js               # Chat input validation
+│   ├── contactReq.validator.js         # Contact request validation
+│   └── verification.validator.js       # Verification validation
+│
+├── Helpers/
+│   ├── Testdbconnection.js             # Test database connection
+│   ├── TestPineconeConnection.js       # Test Pinecone connection
+│   └── Test_Cloudinary.js              # Test Cloudinary connection
+│
+├── utils/
+│   └── response.util.js                # Standardized API responses
+│
+├── .env                                # Environment variables (gitignored)
+├── .gitignore                          # Git ignore rules
+├── package.json                        # NPM dependencies
+└── package-lock.json                   # Locked dependencies
+
+================================================================================
+                            5. DATABASE SCHEMA
+================================================================================
+
+TABLE: users
+┌─────────────────────────┬──────────────┬─────────────────────────┐
+│ Column                  │ Type         │ Description             │
+├─────────────────────────┼──────────────┼─────────────────────────┤
+│ id                      │ UUID (PK)    │ Primary key             │
+│ firebase_uid            │ STRING       │ Firebase Auth UID       │
+│ name                    │ STRING       │ User display name       │
+│ email                   │ STRING       │ User email              │
+│ role                    │ ENUM         │ 'user' or 'admin'       │
+│ verified                │ BOOLEAN      │ Identity verified flag  │
+│ verification_status     │ ENUM         │ null/pending/approved/  │
+│                         │              │ rejected                │
+│ national_id             │ STRING       │ National ID number      │
+│ phone_number            │ STRING       │ E.164 format phone      │
+│ id_image_url            │ TEXT         │ Cloudinary URL          │
+│ verification_submitted_at│ TIMESTAMP   │ Submission time         │
+│ verification_reviewed_at│ TIMESTAMP    │ Review time             │
+│ verification_notes      │ TEXT         │ Admin notes             │
+│ created_at              │ TIMESTAMP    │ Account creation        │
+└─────────────────────────┴──────────────┴─────────────────────────┘
+
+TABLE: posts
+┌─────────────────────────┬──────────────┬─────────────────────────┐
+│ Column                  │ Type         │ Description             │
+├─────────────────────────┼──────────────┼─────────────────────────┤
+│ id                      │ UUID (PK)    │ Primary key             │
+│ user_id                 │ UUID (FK)    │ Post owner              │
+│ title                   │ TEXT         │ Post title              │
+│ post_type               │ ENUM         │ 'lost' or 'found'       │
+│ description             │ TEXT         │ Post description        │
+│ category                │ TEXT         │ Item category           │
+│ country                 │ STRING       │ Country (required)      │
+│ state                   │ STRING       │ State (optional)        │
+│ city                    │ STRING       │ City (optional)         │
+│ latitude                │ FLOAT        │ GPS latitude            │
+│ longitude               │ FLOAT        │ GPS longitude           │
+│ image_url               │ TEXT         │ Cloudinary URL          │
+│ vector_id               │ STRING       │ Pinecone vector ID      │
+│ status                  │ ENUM         │ active/matched/closed/  │
+│                         │              │ resolved                │
+│ created_at              │ TIMESTAMP    │ Post creation           │
+└─────────────────────────┴──────────────┴─────────────────────────┘
+
+TABLE: chats
+┌─────────────────────────┬──────────────┬─────────────────────────┐
+│ Column                  │ Type         │ Description             │
+├─────────────────────────┼──────────────┼─────────────────────────┤
+│ id                      │ UUID (PK)    │ Primary key             │
+│ user_1                  │ UUID (FK)    │ First user (sorted)     │
+│ user_2                  │ UUID (FK)    │ Second user (sorted)    │
+│ created_at              │ TIMESTAMP    │ Chat creation           │
+│ updated_at              │ TIMESTAMP    │ Last message time       │
+└─────────────────────────┴──────────────┴─────────────────────────┘
+UNIQUE INDEX: (user_1, user_2) - Prevents duplicate chats
+
+TABLE: messages
+┌─────────────────────────┬──────────────┬─────────────────────────┐
+│ Column                  │ Type         │ Description             │
+├─────────────────────────┼──────────────┼─────────────────────────┤
+│ id                      │ UUID (PK)    │ Primary key             │
+│ chat_id                 │ UUID (FK)    │ Chat reference          │
+│ sender_id               │ UUID (FK)    │ Message sender          │
+│ content                 │ TEXT         │ Message content         │
+│ created_at              │ TIMESTAMP    │ Message sent time       │
+└─────────────────────────┴──────────────┴─────────────────────────┘
+
+TABLE: contact_requests
+┌─────────────────────────┬──────────────┬─────────────────────────┐
+│ Column                  │ Type         │ Description             │
+├─────────────────────────┼──────────────┼─────────────────────────┤
+│ id                      │ UUID (PK)    │ Primary key             │
+│ sender_id               │ UUID (FK)    │ Request sender          │
+│ receiver_id             │ UUID (FK)    │ Request receiver        │
+│ post_id                 │ UUID (FK)    │ Related post            │
+│ status                  │ ENUM         │ pending/accepted/       │
+│                         │              │ rejected                │
+│ created_at              │ TIMESTAMP    │ Request sent time       │
+└─────────────────────────┴──────────────┴─────────────────────────┘
+
+TABLE: embedding_references
+┌─────────────────────────┬──────────────┬─────────────────────────┐
+│ Column                  │ Type         │ Description             │
+├─────────────────────────┼──────────────┼─────────────────────────┤
+│ id                      │ UUID (PK)    │ Primary key             │
+│ post_id                 │ UUID (FK)    │ Post reference          │
+│ pinecone_id             │ STRING       │ Vector ID in Pinecone   │
+│ created_at              │ TIMESTAMP    │ Embedding creation      │
+└─────────────────────────┴──────────────┴─────────────────────────┘
+
+RELATIONSHIPS:
+- User hasMany Posts (one-to-many)
+- User hasMany ContactRequests as sender (one-to-many)
+- User hasMany ContactRequests as receiver (one-to-many)
+- User hasMany Messages (one-to-many)
+- Post hasOne EmbeddingReference (one-to-one)
+- Post hasMany ContactRequests (one-to-many)
+- Chat hasMany Messages (one-to-many)
+- Chat belongsTo User (user_1) - firstUser
+- Chat belongsTo User (user_2) - secondUser
+
+================================================================================
+                            6. API ENDPOINTS
+================================================================================
+
+BASE URL: http://localhost:3500/api/v1
+
+--------------------------------------------------------------------------------
+AUTHENTICATION ENDPOINTS
+--------------------------------------------------------------------------------
+POST /auth/register
+- Register new user with Firebase UID
+- Body: { firebase_uid, name, email }
+- Response: User object
+- Access: Public
+
+POST /auth/login
+- Login user and get profile
+- Body: { firebase_uid }
+- Response: User object with token
+- Access: Public
+
+--------------------------------------------------------------------------------
+USER ENDPOINTS (Prefix: /user)
+--------------------------------------------------------------------------------
+GET /user/profile
+- Get current user profile
+- Auth: Required (Firebase token)
+- Response: User profile data
+
+PUT /user/profile
+- Update user profile (name only)
+- Auth: Required
+- Body: { name }
+- Response: Success message
+
+DELETE /user/profile
+- Delete user account
+- Auth: Required
+- Response: Success message
+
+POST /user/verification/submit
+- Submit identity verification documents
+- Auth: Required (authenticated only)
+- Body: { national_id, phone_number, id_image_url }
+- Response: Verification submitted confirmation
+- Validator: submitVerificationValidator
+
+GET /user/verification/status
+- Get verification status for current user
+- Auth: Required (authenticated only)
+- Response: Verification status object
+
+--------------------------------------------------------------------------------
+POST ENDPOINTS (Prefix: /post)
+--------------------------------------------------------------------------------
+POST /post/create
+- Create new lost/found post
+- Auth: Required + Verified
+- Body: multipart/form-data
+  - title, post_type, category, description
+  - country, state, city, latitude, longitude
+  - image (file)
+- Response: Created post object
+- Validator: createPostValidator
+- Middleware: uploadMiddleware, uploadToCloudinary
+
+GET /post/all
+- Get all posts with pagination and filters
+- Auth: Required (authenticated)
+- Query: ?limit=10&offset=0&post_type=lost&country=Egypt
+- Response: Paginated posts array
+
+GET /post/:postId
+- Get specific post by ID
+- Auth: Required (authenticated)
+- Response: Post object with owner details
+
+GET /post/my-posts
+- Get current user's posts
+- Auth: Required + Verified
+- Query: ?limit=10&offset=0
+- Response: Paginated user posts
+
+PUT /post/:postId
+- Update own post
+- Auth: Required + Verified
+- Body: { title, description, status, etc. }
+- Response: Success message
+
+DELETE /post/:postId
+- Delete own post
+- Auth: Required + Verified
+- Response: Success message
+- Side effect: Deletes Pinecone vector
+
+--------------------------------------------------------------------------------
+MATCHING ENDPOINTS (Prefix: /match)
+--------------------------------------------------------------------------------
+POST /match/find-matches
+- Find similar items using AI visual matching
+- Auth: Required + Verified
+- Body: multipart/form-data
+  - image (file)
+  - type (lost/found)
+  - category, country, state, city
+  - latitude, longitude
+- Response: Array of matching posts sorted by similarity
+- Validator: matchingValidator
+- Algorithm:
+  1. Generate CLIP embedding (512-dim)
+  2. Query Pinecone for similar vectors (top 100)
+  3. Filter by location (country → state → city)
+  4. Calculate distance if coordinates provided (40km radius)
+  5. Hybrid score: 60% similarity + 40% distance
+  6. Return top matches
+
+--------------------------------------------------------------------------------
+CONTACT REQUEST ENDPOINTS (Prefix: /contact-request)
+--------------------------------------------------------------------------------
+POST /contact-request/send
+- Send contact request to post owner
+- Auth: Required + Verified
+- Body: { receiver_id, post_id }
+- Response: Created request object
+- Validator: sendContactRequestValidator
+- Validation: Cannot send to self, duplicate check
+
+PUT /contact-request/:requestId/respond
+- Accept or reject contact request (receiver only)
+- Auth: Required + Verified
+- Body: { status: 'accepted' | 'rejected' }
+- Response: Updated request object
+- Validator: respondToRequestValidator
+- Side effect: If accepted, auto-creates chat
+
+GET /contact-request/received
+- Get all received contact requests
+- Auth: Required + Verified
+- Query: ?limit=10&offset=0
+- Response: Paginated requests array
+
+GET /contact-request/sent
+- Get all sent contact requests
+- Auth: Required + Verified
+- Query: ?limit=10&offset=0
+- Response: Paginated requests array
+
+GET /contact-request/post/:postId
+- Get all pending requests for a specific post
+- Auth: Required + Verified
+- Response: Array of pending requests
+
+DELETE /contact-request/:requestId
+- Cancel sent contact request (sender only)
+- Auth: Required + Verified
+- Response: Success message
+- Validation: Can only cancel pending requests
+
+--------------------------------------------------------------------------------
+CHAT ENDPOINTS (Prefix: /chat)
+--------------------------------------------------------------------------------
+POST /chat/create
+- Create or get existing chat with another user
+- Auth: Required + Verified
+- Body: { other_user_id }
+- Response: Chat object (created or existing)
+- Validator: createChatValidator
+- Logic: Sorted user IDs prevent duplicates
+
+GET /chat/my-chats
+- Get all user's chats with pagination
+- Auth: Required + Verified
+- Query: ?limit=10&offset=0
+- Response: Paginated chats with last message
+
+GET /chat/:chatId
+- Get specific chat details
+- Auth: Required + Verified
+- Middleware: verifyChatParticipant
+- Response: Chat object with other user info
+
+GET /chat/:chatId/messages
+- Get all messages in a chat
+- Auth: Required + Verified
+- Middleware: verifyChatParticipant
+- Query: ?limit=50&offset=0
+- Response: Paginated messages array
+
+POST /chat/:chatId/send
+- Send message in a chat
+- Auth: Required + Verified
+- Middleware: verifyChatParticipant
+- Body: { content }
+- Validator: sendMessageValidator
+- Response: Created message object
+
+DELETE /chat/:chatId
+- Delete a chat
+- Auth: Required + Verified
+- Middleware: verifyChatParticipant
+- Response: Success message
+
+--------------------------------------------------------------------------------
+ADMIN ENDPOINTS (Prefix: /admin)
+--------------------------------------------------------------------------------
+GET /admin/users
+- Get all users with pagination
+- Auth: Admin only
+- Query: ?limit=50&offset=0
+- Response: Paginated users array
+
+GET /admin/users/:userId
+- Get specific user by ID
+- Auth: Admin only
+- Response: User object
+
+DELETE /admin/users/:userId
+- Delete any user account
+- Auth: Admin only
+- Response: Success message
+
+PUT /admin/posts/:postId
+- Update any post
+- Auth: Admin only
+- Body: Post update data
+- Response: Success message
+
+DELETE /admin/posts/:postId
+- Delete any post
+- Auth: Admin only
+- Response: Success message
+
+GET /admin/verifications/pending
+- Get all pending identity verifications
+- Auth: Admin only
+- Query: ?limit=50&offset=0
+- Response: Paginated pending verifications
+
+POST /admin/verifications/:userId/approve
+- Approve user's identity verification
+- Auth: Admin only
+- Body: { notes: string } (optional)
+- Validator: verificationResponseValidator
+- Response: Success message
+- Side effect: Sets verified=true, status='approved'
+
+POST /admin/verifications/:userId/reject
+- Reject user's identity verification
+- Auth: Admin only
+- Body: { notes: string } (required)
+- Validator: verificationResponseValidator
+- Response: Success message
+- Side effect: Sets verified=false, status='rejected'
+
+================================================================================
+                        7. AUTHENTICATION & SECURITY
+================================================================================
+
+AUTHENTICATION FLOW:
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Frontend: User signs up/logs in with Firebase Auth      │
+│    → Firebase returns JWT token                             │
+│                                                              │
+│ 2. Frontend: Sends token in Authorization header            │
+│    Authorization: Bearer <firebase-token>                   │
+│                                                              │
+│ 3. Backend: verfyFirebaseToken middleware                   │
+│    → Verifies token with Firebase Admin SDK                 │
+│    → Looks up user in database by firebase_uid              │
+│    → Attaches user object to req.user                       │
+│                                                              │
+│ 4. Backend: Two-tier verification middleware                │
+│    → requireAuthentication: Just checks req.user exists     │
+│    → requireVerification: Checks verified=true AND          │
+│      verification_status='approved'                         │
+│                                                              │
+│ 5. Backend: Controller processes request                    │
+│    → Uses req.user.id for all operations                    │
+└─────────────────────────────────────────────────────────────┘
+
+TWO-TIER SECURITY MODEL:
+┌───────────────────────────────────────────────────────────────┐
+│ TIER 1: AUTHENTICATED (Firebase token valid)                 │
+│ ├── Browse posts (read-only)                                 │
+│ ├── View matches                                             │
+│ └── Check own verification status                            │
+│                                                               │
+│ TIER 2: VERIFIED (Identity approved by admin)                │
+│ ├── Create posts                                             │
+│ ├── Send contact requests                                    │
+│ ├── Create chats                                             │
+│ ├── Send messages                                            │
+│ └── All read operations                                      │
+└───────────────────────────────────────────────────────────────┘
+
+MIDDLEWARE CHAIN (EXAMPLE):
+POST /post/create
+├── verfyFirebaseToken (validates Firebase token)
+├── requireVerification (checks verified status)
+├── uploadMiddleware (handles file upload)
+├── uploadToCloudinary (uploads to Cloudinary)
+├── createPostValidator (validates input)
+├── validate (checks validation errors)
+└── postController.createPost (business logic)
+
+SECURITY FEATURES:
+1. Firebase JWT token verification on every protected route
+2. Two-tier verification (browse vs. action)
+3. Chat participant validation (isUserInChat)
+4. Contact request ownership validation
+5. Admin role check for admin endpoints
+6. UUID validation on all ID inputs
+7. Input sanitization with express-validator
+8. SQL injection prevention (Sequelize ORM)
+9. CORS configuration for frontend
+10. Rate limiting (TODO: implement)
+
+ADMIN IDENTIFICATION:
+- User model has 'role' field (ENUM: 'user', 'admin')
+- isAdmin middleware checks: req.user.role === 'admin'
+- Admin routes protected by both verfyFirebaseToken + isAdmin
+
+================================================================================
+                        8. FEATURES IMPLEMENTED
+================================================================================
+
+✅ COMPLETED FEATURES:
+
+1. USER MANAGEMENT
+   ✅ Firebase authentication integration
+   ✅ User registration and login
+   ✅ Profile CRUD operations
+   ✅ Identity verification submission
+   ✅ Two-tier security (authenticated vs. verified)
+
+2. IDENTITY VERIFICATION SYSTEM
+   ✅ Document submission (national_id, phone, ID image)
+   ✅ Admin approval/rejection workflow
+   ✅ Verification status tracking (pending/approved/rejected)
+   ✅ Duplicate submission prevention
+   ✅ Status validation for admin actions
+
+3. POST MANAGEMENT
+   ✅ Create lost/found posts with images
+   ✅ Image upload to Cloudinary
+   ✅ CRUD operations (Create, Read, Update, Delete)
+   ✅ Pagination and filtering
+   ✅ Location data (country, state, city, coordinates)
+   ✅ Status management (active/matched/closed/resolved)
+
+4. AI-POWERED MATCHING
+   ✅ CLIP embedding generation (512-dimensional vectors)
+   ✅ Pinecone vector storage and similarity search
+   ✅ Visual similarity scoring (cosine similarity)
+   ✅ Location-based filtering (country → state → city hierarchy)
+   ✅ Distance calculation (Haversine formula, 40km radius)
+   ✅ Hybrid scoring (60% visual + 40% distance)
+   ✅ Metadata filtering (type, category, status)
+   ✅ Asynchronous embedding processing (non-blocking)
+
+5. CONTACT REQUEST SYSTEM
+   ✅ Send contact requests to post owners
+   ✅ Accept/reject requests (receiver only)
+   ✅ Cancel requests (sender only)
+   ✅ Duplicate request prevention
+   ✅ Auto-chat creation on acceptance
+   ✅ Request history (sent/received)
+   ✅ Post-specific request listing
+
+6. CHAT SYSTEM
+   ✅ Create/get chat between users
+   ✅ Send messages
+   ✅ Get messages with pagination
+   ✅ Chat participant validation (security)
+   ✅ Duplicate chat prevention (sorted user IDs)
+   ✅ User chat listing
+   ✅ Chat deletion
+
+7. ADMIN FUNCTIONS
+   ✅ User management (view, delete)
+   ✅ Post management (update, delete)
+   ✅ Verification approval workflow
+   ✅ Verification rejection with notes
+   ✅ Pending verification queue
+   ✅ Admin role validation
+
+8. VALIDATION LAYER
+   ✅ User input validation (user.validator.js)
+   ✅ Post input validation (post.validator.js)
+   ✅ Matching input validation (matching.validator.js)
+   ✅ Chat input validation (chat.validator.js)
+   ✅ Contact request validation (contactReq.validator.js)
+   ✅ Verification validation (verification.validator.js)
+   ✅ Coordinate pair validation
+   ✅ UUID format validation
+   ✅ E.164 phone format validation
+
+9. DOCUMENTATION
+   ✅ JSDoc comments on all routes
+   ✅ API endpoint documentation
+   ✅ System architecture documentation
+   ✅ Verification workflow documentation
+   ✅ Chat system documentation
+
+🔜 PENDING FEATURES:
+
+1. NOTIFICATION SYSTEM
+   ⏳ In-app notifications
+   ⏳ Push notifications
+   ⏳ Email notifications
+   ⏳ Notification preferences
+   ⏳ TODO comments added in code
+
+2. REAL-TIME CHAT (Socket.io)
+   ⏳ Socket.io server setup
+   ⏳ Real-time message delivery
+   ⏳ Typing indicators
+   ⏳ Read receipts
+   ⏳ Online/offline status
+   ⏳ Reconnection handling
+   📋 Detailed implementation plan created
+
+3. REPORT SYSTEM
+   ⏳ Report users
+   ⏳ Report posts
+   ⏳ Report reasons/categories
+   ⏳ Admin review queue
+   ⏳ User blocking
+   ⏳ Content moderation
+
+4. ADVANCED POST FEATURES
+   ⏳ Post expiration (auto-close after X days)
+   ⏳ Post status updates (matched, resolved)
+   ⏳ Multiple images per post
+   ⏳ Reward amount for found items
+   ⏳ Post sharing (social media)
+
+5. USER FEATURES
+   ⏳ User ratings/reviews
+   ⏳ User reputation system
+   ⏳ Saved searches
+   ⏳ Watchlist/favorites
+   ⏳ Email verification
+
+6. ANALYTICS & MONITORING
+   ⏳ Success rate tracking
+   ⏳ Match quality metrics
+   ⏳ User engagement analytics
+   ⏳ Error logging system
+   ⏳ Performance monitoring
+
+================================================================================
+                        9. DATA FLOW DIAGRAMS
+================================================================================
+
+--------------------------------------------------------------------------------
+FLOW 1: USER REGISTRATION & VERIFICATION
+--------------------------------------------------------------------------------
+1. User signs up with email/password
+   ↓
+2. Frontend: Firebase Auth creates account
+   ↓ (returns Firebase UID + JWT token)
+3. Frontend: POST /auth/register { firebase_uid, name, email }
+   ↓
+4. Backend: Creates user in PostgreSQL
+   ↓ (User Status: authenticated=true, verified=false)
+5. User can browse posts (read-only)
+   ↓
+6. User submits verification: POST /user/verification/submit
+   ↓ (Uploads national_id, phone, ID image)
+7. Backend: Sets verification_status = 'pending'
+   ↓
+8. Admin reviews: GET /admin/verifications/pending
+   ↓
+9. Admin approves: POST /admin/verifications/:userId/approve
+   ↓
+10. Backend: Sets verified=true, verification_status='approved'
+    ↓
+11. User can now create posts, send requests, chat (full access)
+
+--------------------------------------------------------------------------------
+FLOW 2: POST CREATION & AI MATCHING
+--------------------------------------------------------------------------------
+1. Verified user creates post: POST /post/create
+   ↓ (Uploads: title, type, image, location)
+2. Multer middleware: Parses multipart/form-data
+   ↓
+3. Cloudinary middleware: Uploads image to Cloudinary
+   ↓ (Returns Cloudinary URL)
+4. PostService: Saves post to PostgreSQL
+   ↓ (Returns post object with ID)
+5. Async: AIService generates CLIP embedding
+   ↓ (512-dimensional vector from image)
+6. Pinecone: Stores vector with metadata
+   ↓ (Returns vector ID)
+7. PostgreSQL: Updates post.vector_id
+   ↓
+8. Post is now searchable via AI matching
+
+MATCHING FLOW:
+1. User uploads image to find matches: POST /match/find-matches
+   ↓ (Uploads: image, type=opposite of search, location)
+2. AIService: Generates CLIP embedding
+   ↓
+3. Pinecone: Queries for top 100 similar vectors
+   ↓ (Returns: vector IDs + similarity scores)
+4. Filter by metadata: type, category, status='active'
+   ↓
+5. Filter by location: country → state → city (hierarchical)
+   ↓
+6. If coordinates provided: Calculate distance (Haversine)
+   ↓ (Keep only within 40km radius)
+7. Hybrid scoring: 60% similarity + 40% distance_score
+   ↓
+8. Sort by total score (descending)
+   ↓
+9. Return top matches with post details
+
+--------------------------------------------------------------------------------
+FLOW 3: CONTACT REQUEST → CHAT
+--------------------------------------------------------------------------------
+1. User A sees User B's matching post
+   ↓
+2. User A sends request: POST /contact-request/send
+   ↓ { receiver_id: UserB_ID, post_id: Post_ID }
+3. Backend validates:
+   - sender_id ≠ receiver_id (no self-contact)
+   - No duplicate request exists
+   ↓
+4. Creates ContactRequest with status='pending'
+   ↓
+5. User B gets notification: GET /contact-request/received
+   ↓
+6. User B accepts: PUT /contact-request/:requestId/respond
+   ↓ { status: 'accepted' }
+7. Backend validates:
+   - Request belongs to User B
+   - Request status is 'pending'
+   ↓
+8. Updates ContactRequest.status = 'accepted'
+   ↓
+9. AUTO: ChatService.createOrGetChat(UserA_ID, UserB_ID)
+   ↓ (Sorted IDs: [smaller_id, larger_id])
+10. Creates Chat record (if doesn't exist)
+    ↓
+11. Returns chat_id to User B
+    ↓
+12. Users can now chat via /chat endpoints
+
+--------------------------------------------------------------------------------
+FLOW 4: REAL-TIME CHAT (PLANNED - Socket.io)
+--------------------------------------------------------------------------------
+1. User connects: socket.connect('ws://server:3500')
+   ↓
+2. Socket Auth: Validates Firebase token
+   ↓
+3. User joins chat room: socket.emit('join_chat', { chatId })
+   ↓
+4. Server validates: User is participant
+   ↓
+5. socket.join(`chat:${chatId}`)
+   ↓
+6. User sends message: socket.emit('send_message', { chatId, content })
+   ↓
+7. Server: Saves to database (ChatService.sendMessage)
+   ↓
+8. Server: Broadcasts to room
+   ↓ socket.to(`chat:${chatId}`).emit('new_message', message)
+9. Other user receives instantly (if online)
+   ↓
+10. If offline: Message stored in DB, fetched on next login
+
+HYBRID APPROACH:
+- REST API: Message persistence, chat creation, history
+- Socket.io: Real-time delivery, typing indicators, presence
+
+================================================================================
+                    10. SOCKET.IO ARCHITECTURE (PLANNED)
+================================================================================
+
+ARCHITECTURE:
+┌─────────────────────────────────────────────────────────────┐
+│                    Socket.io Server                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  HTTP Server (Express)                                       │
+│       ↓                                                       │
+│  Socket.io Instance                                          │
+│       ↓                                                       │
+│  Authentication Middleware (Firebase token)                  │
+│       ↓                                                       │
+│  Connection Handler                                          │
+│       ├── Register Event Handlers                            │
+│       ├── Join Rooms                                         │
+│       └── Handle Disconnection                               │
+│                                                               │
+│  Event Handlers:                                             │
+│  ├── chat.handler.js (messages)                             │
+│  ├── typing.handler.js (typing indicators)                  │
+│  ├── read.handler.js (read receipts)                        │
+│  └── presence.handler.js (online/offline)                   │
+│                                                               │
+│  Utilities:                                                  │
+│  ├── room.manager.js (track rooms)                          │
+│  ├── socket.response.js (standard format)                   │
+│  └── socket.logger.js (logging)                             │
+└─────────────────────────────────────────────────────────────┘
+
+SOCKET EVENTS:
+
+CLIENT → SERVER:
+- join_chat(chatId) - Join chat room
+- send_message(chatId, content) - Send message
+- typing_start(chatId) - Start typing
+- typing_stop(chatId) - Stop typing
+- message_read(messageId) - Mark as read
+- leave_chat(chatId) - Leave room
+
+SERVER → CLIENT:
+- new_message(message) - Receive message
+- user_typing(userId) - User typing
+- user_stopped_typing(userId) - Stopped typing
+- message_read(messageId) - Message read
+- user_status(userId, status) - Online/offline
+- error(message) - Error occurred
+
+ROOM STRUCTURE:
+- chat:{chatId} - Chat room (e.g., chat:abc-123-def)
+- user:{userId} - User room for private messages
+
+FILES TO CREATE:
+1. loaders/socket.loader.js - Initialize Socket.io
+2. config/socket.config.js - Socket.io settings
+3. socket/index.js - Main entry point
+4. socket/connection.handler.js - Connection lifecycle
+5. socket/handlers/chat.handler.js - Chat events
+6. socket/handlers/typing.handler.js - Typing indicators
+7. socket/handlers/read.handler.js - Read receipts
+8. socket/handlers/presence.handler.js - Online status
+9. socket/middleware/socket.auth.middleware.js - Auth
+10. socket/middleware/error.handler.js - Error handling
+11. socket/middleware/rate.limiter.js - Rate limiting
+12. socket/utils/room.manager.js - Room management
+13. socket/utils/socket.response.js - Response format
+14. socket/utils/socket.logger.js - Logging
+15. services/socket.emitter.service.js - Emit from REST API
+
+IMPLEMENTATION PHASES:
+Phase 1: Setup & Config (2-3 hours)
+Phase 2: Core Chat Events (3-4 hours)
+Phase 3: Advanced Features (2-3 hours)
+Phase 4: REST Integration (2-3 hours)
+Phase 5: Error Handling (2-3 hours)
+Phase 6: Testing & Docs (2-3 hours)
+Total: 13-19 hours (~2-3 days)
+
+================================================================================
+                    11. DEPENDENCIES & INTEGRATIONS
+================================================================================
+
+FIREBASE ADMIN SDK:
+- Purpose: Verify JWT tokens from frontend
+- Usage: verfyFirebaseToken middleware
+- Config: config/firebase.config.js
+- Env: FIREBASE_SERVICE_ACCOUNT (JSON file path)
+- Test: Helpers/TestFirebaseConnection.js (not created yet)
+
+POSTGRESQL (SUPABASE):
+- Purpose: Main database
+- Usage: All repositories
+- Config: db/postgres.js
+- Env: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+- ORM: Sequelize v6.37.7
+- Test: Helpers/Testdbconnection.js
+
+SEQUELIZE ORM:
+- Purpose: Database abstraction
+- Usage: All models and repositories
+- Config: db/Sequelize.js
+- Models: models/*.model.js
+- Associations: models/index.js
+
+CLOUDINARY:
+- Purpose: Image hosting and CDN
+- Usage: Multer middleware → Upload to Cloudinary
+- Config: config/cloudinary.config.js
+- Env: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+- Test: Helpers/Test_Cloudinary.js
+
+PINECONE:
+- Purpose: Vector database for similarity search
+- Usage: AI matching (store and query embeddings)
+- Config: config/pinecone.config.js
+- Env: PINECONE_API_KEY, PINECONE_INDEX_NAME
+- Dimensions: 512 (CLIP embedding size)
+- Metric: Cosine similarity
+- Test: Helpers/TestPineconeConnection.js
+
+CLIP (AI Service):
+- Purpose: Generate image embeddings
+- Usage: AI matching (convert images to vectors)
+- Config: config/ai.config.js
+- API: External CLIP API endpoint
+- Env: CLIP_API_URL, CLIP_API_KEY (if needed)
+- Model: CLIP ViT-B/32 (512 dimensions)
+
+SOCKET.IO (PLANNED):
+- Purpose: Real-time chat
+- Usage: Live message delivery
+- Config: config/socket.config.js (to be created)
+- Env: FRONTEND_URL (CORS)
+- Version: 4.8.3 (already installed)
+
+EXPRESS VALIDATOR:
+- Purpose: Input validation
+- Usage: All validators/*.validator.js
+- Middleware: Middlewares/validation.js
+- Version: 7.3.1
+
+MULTER:
+- Purpose: Handle multipart/form-data (file uploads)
+- Usage: Middlewares/multer.middleware.js
+- Config: Max file size, allowed types
+- Version: 2.0.2
+
+AXIOS:
+- Purpose: HTTP client for external APIs
+- Usage: Call CLIP API for embeddings
+- Version: 1.13.2
+
+INTEGRATION POINTS:
+1. Frontend → Firebase Auth → Backend (JWT verification)
+2. Backend → Cloudinary → Frontend (image URLs)
+3. Backend → CLIP API → Pinecone (embeddings)
+4. Backend → PostgreSQL (data persistence)
+5. Backend → Socket.io → Frontend (real-time) [PLANNED]
+
+DEPENDENCY INJECTION:
+- Services are instantiated once (singleton pattern)
+- Repositories imported by services
+- Controllers import services
+- Routes import controllers
+
+ERROR HANDLING CHAIN:
+try-catch in service → throw error → controller catch → 
+return response.ErrorResponse()
+
+================================================================================
+                        12. ENVIRONMENT VARIABLES
+================================================================================
+
+REQUIRED .env VARIABLES:
+
+# Server Configuration
+PORT=3500
+NODE_ENV=development
+
+# Database (PostgreSQL - Supabase)
+DB_HOST=your-supabase-host.supabase.co
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=your-db-password
+DB_NAME=postgres
+
+# Firebase Admin SDK
+FIREBASE_SERVICE_ACCOUNT=./config/serviceAccountKey.json
+# OR
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_PRIVATE_KEY=your-private-key
+FIREBASE_CLIENT_EMAIL=your-client-email
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Pinecone
+PINECONE_API_KEY=your-pinecone-api-key
+PINECONE_INDEX_NAME=finder-app-embeddings
+PINECONE_ENVIRONMENT=us-east-1-aws
+
+# CLIP API (External AI Service)
+CLIP_API_URL=https://api.clip-service.com/embed
+CLIP_API_KEY=your-clip-api-key (if required)
+
+# Frontend URL (for CORS)
+FRONTEND_URL=http://localhost:3000
+
+# JWT Secret (if not using Firebase)
+JWT_SECRET=your-jwt-secret-key
+
+OPTIONAL VARIABLES:
+
+# Upload Limits
+MAX_FILE_SIZE=5242880  # 5MB in bytes
+ALLOWED_FILE_TYPES=image/jpeg,image/png,image/jpg
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Socket.io
+SOCKET_PING_TIMEOUT=60000
+SOCKET_PING_INTERVAL=25000
+
+# Email Service (for notifications - future)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-email-password
+
+# Redis (for socket scaling - future)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your-redis-password
+
+# Admin Default Credentials (for seeding)
+ADMIN_EMAIL=admin@finderapp.com
+ADMIN_PASSWORD=admin123
+
+================================================================================
+                        13. SETUP INSTRUCTIONS
+================================================================================
+
+PREREQUISITES:
+- Node.js v18+ installed
+- PostgreSQL database (Supabase account)
+- Cloudinary account
+- Pinecone account
+- Firebase project with Admin SDK
+- CLIP API access (or self-hosted)
+
+INSTALLATION STEPS:
+
+1. CLONE REPOSITORY
+   git clone <repository-url>
+   cd Finder_App
+
+2. INSTALL DEPENDENCIES
+   npm install
+
+3. CREATE .env FILE
+   Copy .env.example to .env (if exists)
+   Fill in all required environment variables
+
+4. CONFIGURE FIREBASE
+   - Download serviceAccountKey.json from Firebase Console
+   - Place in config/serviceAccountKey.json
+   - Add to .gitignore (already added)
+
+5. SETUP DATABASE
+   - Create PostgreSQL database on Supabase
+   - Run migrations (if migration files exist)
+   - Or: Start server, Sequelize will sync tables
+
+6. SETUP CLOUDINARY
+   - Sign up at cloudinary.com
+   - Get Cloud Name, API Key, API Secret
+   - Add to .env
+
+7. SETUP PINECONE
+   - Sign up at pinecone.io
+   - Create index: name=finder-app-embeddings, dimension=512, metric=cosine
+   - Get API Key and add to .env
+
+8. TEST CONNECTIONS
+   The app will test connections on startup:
+   - Database connection: Helpers/Testdbconnection.js
+   - Pinecone connection: Helpers/TestPineconeConnection.js
+   - Cloudinary connection: Helpers/Test_Cloudinary.js
+
+9. START SERVER
+   npm start  # Uses nodemon for auto-restart
+   
+   Server will start on http://localhost:3500
+
+10. VERIFY STARTUP
+    Check console for:
+    ✅ Database connection successful
+    ✅ Pinecone connection successful
+    ✅ Cloudinary connection successful
+    ✅ System req all imported
+    ✅ Server running on port 3500
+
+11. CREATE ADMIN USER
+    - Register a new user via POST /auth/register
+    - Manually update role='admin' in database
+    - Or: Create seed script (not implemented yet)
+
+12. TEST API
+    Use Postman/Thunder Client:
+    - POST /api/v1/auth/register
+    - POST /api/v1/auth/login
+    - GET /api/v1/user/profile (with token)
+
+COMMON ISSUES:
+
+1. Database Connection Failed
+   → Check DB_HOST, DB_PASSWORD in .env
+   → Verify Supabase IP whitelist
+   → Check firewall/network
+
+2. Pinecone Connection Failed
+   → Verify PINECONE_API_KEY
+   → Check index name matches
+   → Verify dimension=512
+
+3. Firebase Token Verification Failed
+   → Check serviceAccountKey.json path
+   → Verify Firebase project ID
+   → Check token expiry
+
+4. Image Upload Failed
+   → Verify Cloudinary credentials
+   → Check file size (<5MB)
+   → Verify allowed file types
+
+5. CLIP Embedding Failed
+   → Check CLIP_API_URL
+   → Verify API key (if required)
+   → Check network connectivity
+
+DEVELOPMENT WORKFLOW:
+
+1. Make changes to code
+2. Nodemon auto-restarts server
+3. Test with Postman
+4. Check console logs
+5. Check database records
+6. Commit changes
+
+PRODUCTION DEPLOYMENT:
+
+1. Set NODE_ENV=production in .env
+2. Use pm2 or similar for process management
+3. Setup reverse proxy (nginx)
+4. Enable HTTPS
+5. Setup monitoring
+6. Configure rate limiting
+7. Setup backup strategy
+8. Enable logging service
+
+================================================================================
+                            END OF DOCUMENTATION
+================================================================================
+
+This document contains the complete technical specification of the Finder App
+backend system. It can be shared with other developers, AI assistants, or used
+as a reference for implementation.
+
+For questions or clarifications, refer to the codebase or contact the author.8

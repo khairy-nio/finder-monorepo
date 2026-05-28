@@ -1,0 +1,1 @@
+Start cmd /k "cd /d D:\CLIP_model\ai_service && D:\CLIP_model\ai_service\venv\Scripts\python.exe main_flask.py"

@@ -1,0 +1,40 @@
+﻿
+    /**
+     * Get lightweight admin stats for the dashboard overview
+     */
+    async getAdminStats(req, res) {
+        try {
+            const User = require('../models/User.model');
+            const Post = require('../models/post.model');
+            const Report = require('../models/Report.model');
+            const UserVerification = require('../models/UserVerification.model');
+
+            const [
+                totalUsers,
+                verifiedUsers,
+                activePosts,
+                pendingReports,
+                pendingVerifications,
+                resolvedReports
+            ] = await Promise.all([
+                User.count(),
+                User.count({ where: { verified: true } }),
+                Post.count({ where: { is_found: false, moderation_status: 'visible' } }),
+                Report.count({ where: { status: 'pending' } }),
+                UserVerification.count({ where: { status: 'pending' } }),
+                Report.count({ where: { status: 'resolved' } })
+            ]);
+
+            return response.Success(res, 'Admin stats retrieved successfully', {
+                totalUsers,
+                verifiedUsers,
+                activePosts,
+                pendingReports,
+                pendingVerifications,
+                resolvedReports
+            }, 200);
+        } catch (error) {
+            return response.ErrorResponse(res, 'Server Error', error.message, 500);
+        }
+    }
+

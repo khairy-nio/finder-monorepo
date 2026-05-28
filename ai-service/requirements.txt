@@ -1,0 +1,13 @@
+# Flask
+flask
+flask-cors
+werkzeug
+
+# ML and Image Processing  
+sentence-transformers
+torch
+torchvision
+pillow
+
+# HTTP and utilities
+requests

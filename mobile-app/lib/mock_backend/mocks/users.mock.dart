@@ -1,0 +1,165 @@
+import '../types/user.dart';
+
+// ============================================================
+// MOCK USERS — Realistic dataset (20 records)
+// Matches backend User model exactly
+// ============================================================
+
+final List<UserDto> mockUsers = [
+  UserDto(
+    id: "uuid-user-01",
+    firebaseUid: "firebase-uid-01",
+    name: "Ahmed Ali Hassan",
+    email: "ahmed.ali@example.com",
+    role: "user",
+    verified: true,
+    trustScore: 4.8,
+    nationalId: "29905010123456",
+    phoneNumber: "+201001234567",
+    idImageUrl: "https://placehold.co/400x200/0A3D91/white?text=ID+Front",
+    verificationStatus: "approved",
+    verificationSubmittedAt: DateTime(2024, 10, 15),
+    verificationReviewedAt: DateTime(2024, 10, 16),
+    createdAt: DateTime(2024, 9, 1),
+  ),
+  UserDto(
+    id: "uuid-user-02",
+    firebaseUid: "firebase-uid-02",
+    name: "Sarah Mohamed Ibrahim",
+    email: "sarah.m@example.com",
+    role: "user",
+    verified: false,
+    trustScore: 2.5,
+    phoneNumber: "+201112345678",
+    verificationStatus: "pending",
+    verificationSubmittedAt: DateTime(2025, 1, 20),
+    createdAt: DateTime(2024, 11, 5),
+  ),
+  UserDto(
+    id: "uuid-user-03",
+    firebaseUid: "firebase-uid-03",
+    name: "John Michael Smith",
+    email: "j.smith@example.com",
+    role: "user",
+    verified: true,
+    trustScore: 4.2,
+    nationalId: "11223344556677",
+    phoneNumber: "+14155550101",
+    verificationStatus: "approved",
+    verificationSubmittedAt: DateTime(2024, 8, 10),
+    verificationReviewedAt: DateTime(2024, 8, 12),
+    createdAt: DateTime(2024, 7, 1),
+  ),
+  UserDto(
+    id: "uuid-user-04",
+    firebaseUid: "firebase-uid-04",
+    name: "Emily Rose Chen",
+    email: "emily.chen@example.com",
+    role: "user",
+    verified: false,
+    trustScore: 3.1,
+    verificationStatus: "not_submitted",
+    createdAt: DateTime(2025, 1, 15),
+  ),
+  UserDto(
+    id: "uuid-user-05",
+    firebaseUid: "firebase-uid-05",
+    name: "Omar Khaled Mansour",
+    email: "omar.k@example.com",
+    role: "user",
+    verified: true,
+    trustScore: 4.9,
+    nationalId: "30001011234567",
+    phoneNumber: "+201234567890",
+    verificationStatus: "approved",
+    verificationSubmittedAt: DateTime(2024, 6, 5),
+    verificationReviewedAt: DateTime(2024, 6, 7),
+    createdAt: DateTime(2024, 5, 10),
+  ),
+  UserDto(
+    id: "uuid-user-06",
+    firebaseUid: "firebase-uid-06",
+    name: "Fatima Al-Zahraa",
+    email: "fatima.z@example.com",
+    role: "user",
+    verified: false,
+    trustScore: 1.0,
+    verificationStatus: "rejected",
+    verificationSubmittedAt: DateTime(2024, 12, 1),
+    verificationReviewedAt: DateTime(2024, 12, 3),
+    verificationNotes: "ID image was blurry. Please resubmit.",
+    createdAt: DateTime(2024, 11, 20),
+  ),
+  UserDto(
+    id: "uuid-user-07",
+    firebaseUid: "firebase-uid-07",
+    name: "Karim Adel Saleh",
+    email: "karim.a@example.com",
+    role: "user",
+    verified: true,
+    trustScore: 3.8,
+    nationalId: "29812311234509",
+    phoneNumber: "+201098765432",
+    verificationStatus: "approved",
+    createdAt: DateTime(2024, 4, 3),
+  ),
+  UserDto(
+    id: "uuid-user-08",
+    firebaseUid: "firebase-uid-08",
+    name: "Layla Nour El-Din",
+    email: "layla.n@example.com",
+    role: "user",
+    verified: true,
+    trustScore: 4.5,
+    nationalId: "29711251234567",
+    phoneNumber: "+201556789012",
+    verificationStatus: "approved",
+    createdAt: DateTime(2024, 3, 15),
+  ),
+  UserDto(
+    id: "uuid-user-09",
+    firebaseUid: "firebase-uid-09",
+    name: "Alex Johnson",
+    email: "alex.j@example.com",
+    role: "user",
+    verified: true,
+    trustScore: 4.0,
+    phoneNumber: "+12125550100",
+    verificationStatus: "approved",
+    createdAt: DateTime(2024, 2, 10),
+  ),
+  UserDto(
+    id: "uuid-user-10",
+    firebaseUid: "firebase-uid-10",
+    name: "Nada Hossam",
+    email: "nada.h@example.com",
+    role: "user",
+    verified: false,
+    trustScore: 0.0,
+    verificationStatus: "not_submitted",
+    createdAt: DateTime(2025, 2, 1),
+  ),
+  UserDto(
+    id: "uuid-admin-01",
+    firebaseUid: "firebase-uid-admin",
+    name: "System Administrator",
+    email: "admin@lostfound.app",
+    role: "admin",
+    verified: true,
+    trustScore: 5.0,
+    verificationStatus: "approved",
+    createdAt: DateTime(2023, 1, 1),
+  ),
+];
+
+// Helper: Get user by ID
+UserDto? getUserById(String id) {
+  try {
+    return mockUsers.firstWhere((u) => u.id == id);
+  } catch (_) {
+    return null;
+  }
+}
+
+// Helper: Get the currently "logged in" mock user
+UserDto get currentMockUser => mockUsers[0]; // Ahmed Ali

@@ -1,14 +1,13 @@
 const express = require('express');
 const Router = express.Router();
 const adminController = require('../Controllers/admin.controller');
-const { verfyFirebaseToken } = require('../Middlewares/auth.middleware');
-const isAdmin = require('../Middlewares/isAdmin.middleware');
+const { requireJWT, requireAdmin } = require('../Middlewares/jwt.middleware');
 const { verificationResponseValidator } = require('../validators/verification.validator');
 const validate = require('../Middlewares/validation');
 
-// Apply authentication and admin check to ALL routes
-Router.use(verfyFirebaseToken);
-Router.use(isAdmin);
+// All admin routes require a valid JWT issued by /api/v1/auth/login
+Router.use(requireJWT);
+Router.use(requireAdmin);
 
 /**
  * @route   GET /api/v1/admin/stats
@@ -117,6 +116,22 @@ Router.patch('/posts/:postId/moderation', adminController.updatePostModeration);
  * @body    { points: number, reason?: string }
  */
 Router.post('/users/:userId/points/adjust', adminController.adjustUserPoints);
+
+/**
+ * @route   GET /api/v1/admin/posts
+ * @desc    List all posts with optional filters (admin — full data, all statuses)
+ * @access  Admin only
+ * @query   ?limit=100&offset=0&type=lost|found&status=active|closed&moderation_status=visible|hidden|removed|all
+ */
+Router.get('/posts', adminController.getAllPosts);
+
+/**
+ * @route   GET /api/v1/admin/reports
+ * @desc    Get all user reports with optional status filter
+ * @access  Admin only
+ * @query   ?limit=100&offset=0&status=pending|resolved
+ */
+Router.get('/reports', adminController.getAllReports);
 
 /**
  * @route   GET /api/v1/admin/chats/:chatId/messages

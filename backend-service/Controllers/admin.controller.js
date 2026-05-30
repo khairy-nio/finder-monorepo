@@ -2,6 +2,7 @@ const response = require('../utils/response.util');
 const UserService = require('../services/user.service');
 const PostService = require('../services/Post.service');
 const RecoveryService = require('../services/recovery.service');
+const reportService = require('../services/report.service');
 
 
 class AdminController {
@@ -387,6 +388,50 @@ class AdminController {
                 chat,
                 messages
             }, 200);
+        } catch (error) {
+            return response.ErrorResponse(res, 'Server Error', error.message, 500);
+        }
+    }
+
+    /**
+     * Get all posts (admin — full data, all statuses)
+     * @route GET /api/v1/admin/posts
+     */
+    async getAllPosts(req, res) {
+        try {
+            const { limit, offset, type, status, moderation_status } = req.query;
+            const result = await PostService.getFilteredPosts({
+                limit: parseInt(limit) || 100,
+                offset: parseInt(offset) || 0,
+                type,
+                status,
+                moderation_status: moderation_status || 'all'
+            });
+            if (!result.success) {
+                return response.ErrorResponse(res, result.message, null, 400);
+            }
+            return response.Success(res, 'Posts retrieved successfully', {
+                posts: result.data,
+                pagination: result.pagination
+            }, 200);
+        } catch (error) {
+            return response.ErrorResponse(res, 'Server Error', error.message, 500);
+        }
+    }
+
+    /**
+     * Get all reports (admin)
+     * @route GET /api/v1/admin/reports
+     */
+    async getAllReports(req, res) {
+        try {
+            const { limit, offset, status } = req.query;
+            const data = await reportService.getAllReports(
+                parseInt(limit) || 100,
+                parseInt(offset) || 0,
+                status
+            );
+            return response.Success(res, 'Reports retrieved successfully', data, 200);
         } catch (error) {
             return response.ErrorResponse(res, 'Server Error', error.message, 500);
         }

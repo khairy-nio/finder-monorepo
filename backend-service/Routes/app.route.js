@@ -2,6 +2,7 @@ const express =require('express');
 const Router = express.Router();
 const userRoute=require('./user.route');
 const adminRoute=require('./admin.route');
+const authRoute=require('./auth.route');
 const PostRoute=require('./post.route');
 const MatchingRoute = require('./matching.route');
 const ContactReqRoute = require('./contactReq.route');
@@ -10,6 +11,7 @@ const ReportRoute = require('./report.route');
 const NotificationRoute = require('./notification.route');
 const response = require('../utils/response.util');
 
+Router.use('/auth',authRoute);
 Router.use('/user',userRoute);
 Router.use('/admin',adminRoute);
 Router.use('/post',PostRoute);

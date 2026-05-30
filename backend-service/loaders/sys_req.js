@@ -1,9 +1,7 @@
-require('../models/index');
-require('../Helpers/Testdbconnection');
+// Eager-load service configs so any init errors surface at boot rather than
+// at first request. Testdbconnection / TestPineconeConnection were removed from
+// here — they are standalone diagnostic scripts, not production boot steps.
 require('../config/firebase.config');
 require('../config/pinecone.config');
-require('../Helpers/TestPineconeConnection');
 require('../config/cloudinary.config');
-require('../Helpers/Test_Cloudinary');
-console.log('system req all imported');
-
+console.log('✅ Service configs loaded');

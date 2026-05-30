@@ -29,7 +29,7 @@ class AdminController {
             ] = await Promise.all([
                 User.count(),
                 User.count({ where: { verified: true } }).catch(() => User.count()), // Fallback if `is_verified` or `verified` differs
-                Post.count({ where: { is_found: false, moderation_status: 'visible' } }).catch(() => Post.count()),
+                Post.count({ where: { status: 'active', moderation_status: 'visible' } }).catch(() => Post.count()),
                 Report.count({ where: { status: 'pending' } }),
                 User.count({ where: { verification_status: 'pending' } }),
                 Report.count({ where: { status: 'resolved' } }),

@@ -9,16 +9,20 @@ class ChatController {
     async createOrGetChat(req, res) {
         try {
             const currentUserId = req.user.id;
-            const { other_user_id } = req.body;
+            const { other_user_id, post_id } = req.body;
 
             if (!other_user_id) {
                 return response.ErrorResponse(res, 'other_user_id is required', null, 400);
+            }
+            if (!post_id) {
+                return response.ErrorResponse(res, 'post_id is required', null, 400);
             }
 
             const ContactRequest = require('../models/ContactRequest.model');
             const { Op } = require('sequelize');
             const hasAcceptedRequest = await ContactRequest.findOne({
                 where: {
+                    post_id,
                     status: 'accepted',
                     [Op.or]: [
                         { sender_id: currentUserId, receiver_id: other_user_id },
@@ -31,7 +35,7 @@ class ChatController {
                 return response.ErrorResponse(res, 'Access denied: You must have an accepted contact request to start a chat', null, 403);
             }
 
-            const result = await ChatService.createOrGetChat(currentUserId, other_user_id);
+            const result = await ChatService.createOrGetChat(post_id, currentUserId, other_user_id);
             
             if (!result.success) {
                 return response.ErrorResponse(res, result.message, null, 400);
@@ -258,8 +262,13 @@ class ChatController {
         try {
             const currentUserId = req.user.id;
             const { otherUserId } = req.params;
+            const { post_id } = req.query;
 
-            const result = await ChatService.getChatBetweenUsers(currentUserId, otherUserId);
+            if (!post_id) {
+                return response.ErrorResponse(res, 'post_id query parameter is required', null, 400);
+            }
+
+            const result = await ChatService.getChatBetweenUsers(post_id, currentUserId, otherUserId);
             
             if (!result.success) {
                 return response.ErrorResponse(res, result.message, null, 404);

@@ -2,6 +2,7 @@ const postRepo = require('../Repository/post.repo');
 const AIService = require('../config/ai.config');
 const pineconeIndex = require('../config/pinecone.config');
 const { normalizeLocation } = require('../utils/normalization.util');
+const cosineSimilarity = require('../utils/cosineSimilarity');
 
 const MAX_DISTANCE_KM = 40; // 40km radius for local matching
 
@@ -15,12 +16,12 @@ class MatchingService {
         const R = 6371; // Earth radius in km
         const dLat = this.toRad(lat2 - lat1);
         const dLon = this.toRad(lon2 - lon1);
-        
-        const a = 
+
+        const a =
             Math.sin(dLat / 2) * Math.sin(dLat / 2) +
             Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
             Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        
+
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
@@ -47,7 +48,7 @@ class MatchingService {
             // STEP 1: Fetch Candidate Posts (with Progressive Fallbacks)
             // ==========================================
             console.log('Step 1: Fetching candidate posts with fallbacks...');
-            
+
             // Normalize inputs for consistent searching
             const normCountry = normalizeLocation(country);
             const normState = state ? normalizeLocation(state) : null;
@@ -140,23 +141,23 @@ class MatchingService {
             if (latitude && longitude) {
                 const latFloat = parseFloat(latitude);
                 const lonFloat = parseFloat(longitude);
-                
+
                 if (!isNaN(latFloat) && !isNaN(lonFloat)) {
                     nearbyPosts = candidatePosts.rows.filter(post => {
                         if (!post.latitude || !post.longitude) return false;
-                        
+
                         const postLat = parseFloat(post.latitude);
                         const postLon = parseFloat(post.longitude);
-                        
+
                         if (isNaN(postLat) || isNaN(postLon)) return false;
-                        
+
                         const distance = this.calculateDistance(
                             latFloat,
                             lonFloat,
                             postLat,
                             postLon
                         );
-                        
+
                         post.dataValues.distance_km = Math.round(distance * 10) / 10;
                         return distance <= MAX_DISTANCE_KM;
                     });
@@ -176,18 +177,28 @@ class MatchingService {
             // STEP 2: Generate Embedding (Only if candidates exist!)
             // ==========================================
             console.log('Step 2: Generating image embedding...');
-            const imagevector = await AIService.generateEmbedding(imageUrl);
+            let imagevector;
+            try {
+                imagevector = await AIService.generateEmbedding(imageUrl);
+            } catch (aiError) {
+                console.error('[MatchingService] AI embedding failed:', aiError.message);
+                return {
+                    success: false,
+                    ai_unavailable: true,
+                    message: aiError.message
+                };
+            }
 
             // ==========================================
             // STEP 3: Vector Similarity Search (Focused on nearby posts)
             // ==========================================
             const candidateIds = nearbyPosts.map(p => p.id);
-            
+
             console.log(`Step 3: Searching ${candidateIds.length} vectors in Pinecone...`);
 
             // Build Pinecone filter dynamically aligned with database candidate records
             const samplePost = nearbyPosts[0];
-            
+
             // RELAXED: Removed moderation_status as it may be missing in older Pinecone records
             const pineconeFilter = {
                 post_type: oppositeType,
@@ -212,7 +223,7 @@ class MatchingService {
             });
 
             console.log(`[MatchingService] Pinecone returned ${matchResults.matches?.length || 0} raw matches.`);
-            
+
             if (!matchResults.matches || matchResults.matches.length === 0) {
                 // FALLBACK: If filtering caused 0 results, try relaxing city/area filters in Pinecone too
                 console.log('[MatchingService] Zero matches with strict filters. Retrying with relaxed Pinecone filter (country only)...');
@@ -221,14 +232,14 @@ class MatchingService {
                     status: 'active',
                     country: normalizeLocation(samplePost.country)
                 };
-                
+
                 const relaxedResults = await pineconeIndex.query({
                     vector: imagevector,
                     topK: 20,
                     includeMetadata: true,
                     filter: relaxedFilter
                 });
-                
+
                 matchResults.matches = relaxedResults.matches || [];
                 console.log(`[MatchingService] Relaxed Pinecone search returned ${matchResults.matches.length} matches.`);
             }

@@ -57,6 +57,7 @@ class PostService {
 
             // Generate matches synchronously to return to user
             let matches = [];
+            let matchingWarning = null;
             try {
                 const MatchingService = require('./matching.service');
                 const matchResult = await MatchingService.checkMatch(
@@ -72,17 +73,27 @@ class PostService {
                 );
                 if (matchResult.success) {
                     matches = matchResult.data;
+                } else if (matchResult.ai_unavailable) {
+                    matchingWarning = 'AI service unavailable — matching skipped';
+                    console.warn('[PostService] AI service down during post creation, matching skipped.');
+                } else {
+                    matchingWarning = 'Matching service error — matching skipped';
+                    console.warn('[PostService] Matching failed:', matchResult.message);
                 }
             } catch (err) {
-                console.error("Failed to generate matches during post creation:", err);
+                matchingWarning = 'Matching service error — matching skipped';
+                console.error('[PostService] Unexpected matching error:', err.message);
             }
 
-            return {
+            const response = {
                 success: true,
                 message: 'Post created successfully',
                 data: newPost,
                 matches: matches
             };
+            if (matchingWarning) response.warning = matchingWarning;
+
+            return response;
         } catch (err) {
             throw err;
         }

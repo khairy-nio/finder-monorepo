@@ -29,6 +29,8 @@ services:
     env:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: "8000"
       # --- Set the following in the Koyeb dashboard (Secrets) after account creation ---
       # - key: DATABASE_URL
       #   value: <your-postgresql-connection-string>

@@ -89,12 +89,12 @@ class PostRepository {
             
             // Add filters only if provided
             if (type) whereClause.post_type = type;
-            if (category) whereClause.category = { [Op.iLike]: `%${category}%` };
+            if (category) whereClause.category = { [Op.like]: `%${category}%` };
             if (userId) whereClause.user_id = userId;
-            if(country) whereClause.country = { [Op.iLike]: `%${country}%` };
-            if(state) whereClause.state = { [Op.iLike]: `%${state}%` };
-            if(city) whereClause.city = { [Op.iLike]: `%${city}%` };
-            if(area) whereClause.area = { [Op.iLike]: `%${area}%` };
+            if(country) whereClause.country = { [Op.like]: `%${country}%` };
+            if(state) whereClause.state = { [Op.like]: `%${state}%` };
+            if(city) whereClause.city = { [Op.like]: `%${city}%` };
+            if(area) whereClause.area = { [Op.like]: `%${area}%` };
             // Note: latitude/longitude removed from SQL filters (used for distance calculation in service)
            
             return await Post.findAndCountAll({
@@ -257,11 +257,11 @@ class PostRepository {
             }
 
             if (type)     whereClause.post_type = type;
-            if (category) whereClause.category  = { [Op.iLike]: `%${category}%` };
-            if (country)  whereClause.country   = { [Op.iLike]: `%${country}%` };
-            if (state)    whereClause.state      = { [Op.iLike]: `%${state}%` };
-            if (city)     whereClause.city       = { [Op.iLike]: `%${city}%` };
-            if (area)     whereClause.area       = { [Op.iLike]: `%${area}%` };
+            if (category) whereClause.category  = { [Op.like]: `%${category}%` };
+            if (country)  whereClause.country   = { [Op.like]: `%${country}%` };
+            if (state)    whereClause.state      = { [Op.like]: `%${state}%` };
+            if (city)     whereClause.city       = { [Op.like]: `%${city}%` };
+            if (area)     whereClause.area       = { [Op.like]: `%${area}%` };
 
             return await Post.findAndCountAll({
                 attributes: PUBLIC_FEED_ATTRIBUTES,

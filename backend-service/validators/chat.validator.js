@@ -8,7 +8,10 @@ const { body } = require('express-validator');
 exports.createChatValidator = [
     body('other_user_id')
         .notEmpty().withMessage('Other user ID is required')
-        .isUUID().withMessage('Other user ID must be a valid UUID')
+        .isUUID().withMessage('Other user ID must be a valid UUID'),
+    body('post_id')
+        .notEmpty().withMessage('post_id is required')
+        .isUUID().withMessage('post_id must be a valid UUID')
 ];
 
 // Send message validator

@@ -70,7 +70,7 @@ class RecoveryService {
             let ownerPoints = 0;
             let claimantPoints = 0;
 
-            const isLostItem = (post.postType || post.type || '').toLowerCase() === 'lost';
+            const isLostItem = (post.post_type || '').toLowerCase() === 'lost';
 
             if (isLostItem) {
                 // Lost-item recovery: post owner recovered their lost item, claimant is the finder/helper

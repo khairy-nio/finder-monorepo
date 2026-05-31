@@ -116,6 +116,10 @@ const User =sequelize.define('users',{
     moderated_at: {
         type: DataTypes.DATE,
         allowNull: true
+    },
+    password_hash: {
+        type: DataTypes.STRING,
+        allowNull: true
     }
 },
 {

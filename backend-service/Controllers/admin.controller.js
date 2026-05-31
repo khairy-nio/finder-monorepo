@@ -436,6 +436,58 @@ class AdminController {
             return response.ErrorResponse(res, 'Server Error', error.message, 500);
         }
     }
+
+    /**
+     * Get admin notifications — pending verifications + pending reports
+     * @route GET /api/v1/admin/notifications
+     */
+    async getNotifications(_req, res) {
+        try {
+            const User = require('../models/User.model');
+            const Report = require('../models/Report.model');
+
+            const [pendingVerifications, pendingReports] = await Promise.all([
+                User.findAll({
+                    where: { verification_status: 'pending' },
+                    attributes: ['id', 'name', 'email', 'verification_submitted_at'],
+                    order: [['verification_submitted_at', 'DESC']],
+                    limit: 10
+                }),
+                Report.findAll({
+                    where: { status: 'pending' },
+                    attributes: ['id', 'reportType', 'reason', 'created_at'],
+                    order: [['created_at', 'DESC']],
+                    limit: 10
+                })
+            ]);
+
+            const items = [
+                ...pendingVerifications.map(u => ({
+                    id: `verify-${u.id}`,
+                    type: 'verification',
+                    title: 'Verification Request',
+                    body: `${u.name || u.email} submitted identity documents`,
+                    link: '/verification',
+                    createdAt: u.verification_submitted_at
+                })),
+                ...pendingReports.map(r => ({
+                    id: `report-${r.id}`,
+                    type: 'report',
+                    title: 'New Report',
+                    body: `${r.reportType || 'Report'}: ${(r.reason || '').slice(0, 60)}`,
+                    link: '/reports',
+                    createdAt: r.created_at
+                }))
+            ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            return response.Success(res, 'Notifications retrieved', {
+                total: items.length,
+                items
+            }, 200);
+        } catch (error) {
+            return response.ErrorResponse(res, 'Server Error', error.message, 500);
+        }
+    }
 }
 
 module.exports = new AdminController();

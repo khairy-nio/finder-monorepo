@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Box, Button, TextField, Typography, Paper, Alert } from '@mui/material';
 import { useAuth } from '../../providers/authContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, isAdmin, authError } = useAuth();
+  const { login, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   if (isAdmin) return <Navigate to="/dashboard" replace />;
 
@@ -19,10 +20,11 @@ export default function Login() {
     
     try {
       await login(email, password);
-      // Let the AuthProvider handle the redirect via backend role verification naturally
-      // navigate('/dashboard'); // REMOVED TO PREVENT RACE CONDITION FLICKER
-    } catch {
-      setError('Invalid credentials, missing Firebase config, or unauthorized access.');
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Login component error:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Invalid credentials or unauthorized access.';
+      setError(errMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -38,12 +40,6 @@ export default function Login() {
           Sign in with your admin credentials
         </Typography>
 
-        {authError && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Firebase is not configured. <br />
-            <strong>Offline Dev Mode:</strong> Sign in with <code>admin@example.com</code> and <code>admin123</code>.
-          </Alert>
-        )}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         <form onSubmit={handleSubmit}>
@@ -76,7 +72,6 @@ export default function Login() {
             {isSubmitting ? 'Signing In...' : 'Sign In'}
           </Button>
         </form>
-
       </Paper>
     </Box>
   );

@@ -1,20 +1,26 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Avatar,
   Badge,
   Box,
+  Chip,
+  CircularProgress,
+  Divider,
   Drawer,
   IconButton,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
+  Popover,
   Stack,
   Tooltip,
   Typography,
   alpha,
   useMediaQuery,
 } from '@mui/material';
+import api from '../api/axios';
 import {
   ArticleRounded as PostsIcon,
   DashboardRounded as DashboardIcon,
@@ -42,7 +48,15 @@ const menuItems = [
 
 export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifAnchor, setNotifAnchor] = useState(null);
   const { logout, currentUser } = useAuth();
+
+  const { data: notifData, isLoading: notifLoading } = useQuery({
+    queryKey: ['admin-notifications'],
+    queryFn: () => api.get('/admin/notifications').then(r => r.data?.data),
+    refetchInterval: 30000,
+    staleTime: 20000,
+  });
   const { mode, toggleMode } = useThemeMode();
   const navigate = useNavigate();
   const location = useLocation();
@@ -201,12 +215,72 @@ export default function AdminLayout() {
               </Tooltip>
               
               <Tooltip title="Notifications">
-                <IconButton sx={{ p: 1.5, bgcolor: alpha(theme.palette.text.primary, 0.03) }}>
-                  <Badge color="secondary" variant="dot">
+                <IconButton
+                  onClick={e => setNotifAnchor(e.currentTarget)}
+                  sx={{ p: 1.5, bgcolor: alpha(theme.palette.text.primary, 0.03) }}
+                >
+                  <Badge badgeContent={notifData?.total || 0} color="error" max={99}>
                     <NotificationsIcon fontSize="small" />
                   </Badge>
                 </IconButton>
               </Tooltip>
+
+              <Popover
+                open={Boolean(notifAnchor)}
+                anchorEl={notifAnchor}
+                onClose={() => setNotifAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{ sx: { width: 360, borderRadius: 3, mt: 1, boxShadow: 8 } }}
+              >
+                <Box sx={{ p: 2.5, pb: 1.5 }}>
+                  <Typography variant="h6" fontWeight={800}>Notifications</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Pending verifications & reports
+                  </Typography>
+                </Box>
+                <Divider />
+
+                {notifLoading ? (
+                  <Box display="flex" justifyContent="center" p={4}>
+                    <CircularProgress size={28} />
+                  </Box>
+                ) : !notifData?.items?.length ? (
+                  <Box p={4} textAlign="center">
+                    <Typography color="text.secondary" variant="body2">All clear — nothing pending</Typography>
+                  </Box>
+                ) : (
+                  <List disablePadding sx={{ maxHeight: 400, overflow: 'auto' }}>
+                    {notifData.items.map((item, i) => (
+                      <Box key={item.id}>
+                        <ListItem disablePadding>
+                          <ListItemButton
+                            onClick={() => { navigate(item.link); setNotifAnchor(null); }}
+                            sx={{ px: 2.5, py: 1.5 }}
+                          >
+                            <Box sx={{ width: '100%' }}>
+                              <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                                <Chip
+                                  label={item.type === 'verification' ? 'Verification' : 'Report'}
+                                  size="small"
+                                  color={item.type === 'verification' ? 'primary' : 'error'}
+                                  sx={{ height: 20, fontSize: 10, fontWeight: 700 }}
+                                />
+                                <Typography variant="caption" color="text.disabled">
+                                  {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ''}
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" fontWeight={600}>{item.title}</Typography>
+                              <Typography variant="caption" color="text.secondary" noWrap>{item.body}</Typography>
+                            </Box>
+                          </ListItemButton>
+                        </ListItem>
+                        {i < notifData.items.length - 1 && <Divider />}
+                      </Box>
+                    ))}
+                  </List>
+                )}
+              </Popover>
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

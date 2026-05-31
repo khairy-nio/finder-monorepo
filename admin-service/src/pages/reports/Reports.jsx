@@ -119,8 +119,8 @@ export default function Reports() {
 
   const fetchReports = async () => {
     try {
-      const response = await api.get('/report/all', { params: { limit: 100, offset: 0 } });
-      setReports(response.data?.reports || []);
+      const response = await api.get('/admin/reports', { params: { limit: 100, offset: 0 } });
+      setReports(response.data?.reports || response.data || []);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to load reports.');
     } finally {
@@ -179,7 +179,7 @@ export default function Reports() {
     setSaving(true);
     setError('');
     try {
-      await api.put(`/report/${selectedReport.id}/status`, form);
+      await api.put(`/admin/reports/${selectedReport.id}/status`, form);
       setReports((items) => items.map((report) => (report.id === selectedReport.id ? { ...report, ...form } : report)));
       setSelectedReport(null);
     } catch (err) {

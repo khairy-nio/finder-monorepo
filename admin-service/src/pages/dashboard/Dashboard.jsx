@@ -145,12 +145,12 @@ export default function Dashboard() {
       const fetchPromises = selectedItems.map(async (type) => {
         let endpoint = '';
         if (type === 'users') endpoint = '/admin/users';
-        else if (type === 'posts') endpoint = '/post';
-        else if (type === 'reports') endpoint = '/report/all';
+        else if (type === 'posts') endpoint = '/admin/posts';
+        else if (type === 'reports') endpoint = '/admin/reports';
         else if (type === 'verifications') endpoint = '/admin/verifications/pending';
 
         const res = await api.get(endpoint, { params: { limit: 1000 } });
-        const data = res.data?.users || res.data?.reports || res.data?.verifications || res.data || [];
+        const data = res.data?.users || res.data?.posts || res.data?.reports || res.data?.verifications || res.data || [];
         const csv = convertToCSV(data, type);
         
         if (selectedItems.length === 1) {

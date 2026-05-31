@@ -1,8 +1,10 @@
 const express = require('express');
 const Router = express.Router();
 const adminController = require('../Controllers/admin.controller');
+const reportController = require('../Controllers/report.controller');
 const { requireJWT, requireAdmin } = require('../Middlewares/jwt.middleware');
 const { verificationResponseValidator } = require('../validators/verification.validator');
+const { updateReportStatusValidator } = require('../validators/report.validator');
 const validate = require('../Middlewares/validation');
 
 // All admin routes require a valid JWT issued by /api/v1/auth/login
@@ -15,6 +17,13 @@ Router.use(requireAdmin);
  * @access  Admin only
  */
 Router.get('/stats', adminController.getAdminStats);
+
+/**
+ * @route   GET /api/v1/admin/notifications
+ * @desc    Get pending verifications + pending reports as actionable notifications
+ * @access  Admin only
+ */
+Router.get('/notifications', adminController.getNotifications);
 
 /**
  * @route   GET /api/v1/admin/users
@@ -132,6 +141,13 @@ Router.get('/posts', adminController.getAllPosts);
  * @query   ?limit=100&offset=0&status=pending|resolved
  */
 Router.get('/reports', adminController.getAllReports);
+
+/**
+ * @route   PUT /api/v1/admin/reports/:id/status
+ * @desc    Update report status (admin — JWT only, no Firebase)
+ * @access  Admin only
+ */
+Router.put('/reports/:id/status', updateReportStatusValidator, validate, reportController.updateReportStatus);
 
 /**
  * @route   GET /api/v1/admin/chats/:chatId/messages

@@ -1,13 +1,21 @@
+'use strict';
 const express = require('express');
 const router = express.Router();
 const reportController = require('../Controllers/report.controller');
-const { createReportValidator, updateReportStatusValidator } = require('../validators/report.validator');
+const { createReportValidator } = require('../validators/report.validator');
 const validate = require('../Middlewares/validation');
-const { requireAuthentication, requireVerification } = require('../Middlewares/isVerfied.middleware');
+const { requireVerification } = require('../Middlewares/isVerfied.middleware');
 const { verfyFirebaseToken: verifyFirebaseToken } = require('../Middlewares/auth.middleware');
-const isAdmin = require('../Middlewares/isAdmin.middleware');
 
-// User routes
+// ─── MOBILE ONLY ─────────────────────────────────────────────────────────────
+// All report management (list, update status) lives in /api/v1/admin/reports
+// with JWT auth. Only report CREATION is a mobile user action.
+
+/**
+ * @route   POST /api/v1/report/create
+ * @desc    Mobile user submits a report (user/post/chat)
+ * @access  Firebase — verified users only
+ */
 router.post(
     '/create',
     verifyFirebaseToken,
@@ -15,30 +23,6 @@ router.post(
     createReportValidator,
     validate,
     reportController.createReport
-);
-
-// Admin routes
-router.get(
-    '/all',
-    verifyFirebaseToken,
-    isAdmin,
-    reportController.getAllReports
-);
-
-router.get(
-    '/:id',
-    verifyFirebaseToken,
-    isAdmin,
-    reportController.getReportById
-);
-
-router.put(
-    '/:id/status',
-    verifyFirebaseToken,
-    isAdmin,
-    updateReportStatusValidator,
-    validate,
-    reportController.updateReportStatus
 );
 
 module.exports = router;

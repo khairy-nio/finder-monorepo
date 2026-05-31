@@ -81,7 +81,7 @@ const Post = sequelize.define('posts', {
     // NULL = no questions configured (old posts + new posts without questions)
     // NEVER exposed in public feed DTOs.
     verification_questions: {
-        type: DataTypes.JSONB,
+        type: DataTypes.JSON,   // JSON works for both PostgreSQL and SQLite; JSONB is PG-only
         allowNull: true,
         defaultValue: null
     }

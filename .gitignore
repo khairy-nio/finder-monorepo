@@ -1,11 +1,26 @@
-# Secrets
+# Secrets — never commit real env files
 .env
-.env.*
+.env.local
+.env.*.local
+.env.production
+.env.staging
 *firebase*.json
 *serviceAccount*.json
 *.pem
 *.key
 *.cert
+
+# SQLite database files (local dev only)
+*.sqlite
+*.sqlite3
+*.db
+
+# Render config duplicates
+"render 2.yaml"
+
+# BUT DO commit example/template files so others know what to configure
+!.env.example
+!.env.*.example
 
 # Node
 node_modules/

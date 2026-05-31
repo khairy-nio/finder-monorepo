@@ -48,7 +48,7 @@ const ContactRequest = sequelize.define('contact_requests', {
     // Stored as: [{ questionId: number, answer: string }]
     // NULL = old request, or post had no verification questions set.
     verification_answers: {
-        type: DataTypes.JSONB,
+        type: DataTypes.JSON,   // JSON works for both PostgreSQL and SQLite; JSONB is PG-only
         allowNull: true,
         defaultValue: null
     }

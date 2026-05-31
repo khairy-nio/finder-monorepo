@@ -19,10 +19,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    // Handle global API errors (e.g., 401 Unauthorized)
     if (error.response?.status === 401 || error.response?.status === 403) {
-      // localStorage.removeItem('admin_token');
-      // window.location.href = '/login';
+      localStorage.removeItem('admin_token');
+      // Only redirect if not already on /login to avoid loops
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

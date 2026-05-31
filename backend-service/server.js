@@ -14,20 +14,27 @@ const server = http.createServer(app);
 const port = process.env.PORT || 3500;
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-const allowAllOrigins =
-    allowedOrigins.length === 0 && process.env.NODE_ENV !== 'production';
+const ADMIN_DASHBOARD_ORIGIN = 'https://finder-admin-dashboard.vercel.app';
+
+const allowedOrigins = [
+    ADMIN_DASHBOARD_ORIGIN,
+    ...(process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean),
+];
+const uniqueOrigins = [...new Set(allowedOrigins)];
+const allowAllOrigins = uniqueOrigins.length <= 1 && process.env.NODE_ENV !== 'production';
 
 app.use(cors({
     origin: (origin, callback) => {
         if (allowAllOrigins || !origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
+        if (uniqueOrigins.includes(origin)) return callback(null, true);
         return callback(new Error('Not allowed by CORS'));
     },
-    credentials: true
+    credentials: true,
+    allowedHeaders: ['Authorization', 'Content-Type'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 
 // ─── Core middleware ───────────────────────────────────────────────────────────
@@ -86,10 +93,15 @@ async function startServer() {
         // Step 4 — sync DB schema; a failure here must NOT prevent the server
         // from starting — controllers that need the DB will fail at request time
         // with a proper error, rather than the whole process silently dying.
+        //
+        // In development: alter:true adds missing columns automatically (e.g. password_hash
+        // added to User.model.js after the SQLite file was first created).
+        // In production: no alter — schema changes must go through a proper migration.
         console.log('[4/4] Syncing database…');
         const sequelize = require('./db/Sequelize');
         try {
-            await sequelize.sync();
+            const isProduction = process.env.NODE_ENV === 'production';
+            await sequelize.sync(isProduction ? {} : { alter: true });
             console.log('      ✅ Database synced');
         } catch (dbErr) {
             console.error('      ⚠️  DB sync failed (server still starting):', dbErr.message);

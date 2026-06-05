@@ -135,7 +135,7 @@ finder-monorepo/
 
 ### Prerequisites
 - Flutter SDK 3.x
-- Node.js 18+
+- Node.js 24.x
 - Python 3.9+
 - PostgreSQL (or SQLite for local dev)
 - A `.env` file per service (see below)
@@ -166,7 +166,7 @@ pip install -r requirements.txt
 python main_flask.py
 ```
 
-Runs on `http://localhost:5000`
+Runs on `http://localhost:8000`
 
 ### 4. Admin Dashboard
 
@@ -200,7 +200,7 @@ flutter run
 
 ```env
 PORT=3500
-DATABASE_URL=postgresql://user:password@localhost:5432/finder_db
+DATABASE_URL=postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
 
 # Firebase Admin
 FIREBASE_PROJECT_ID=
@@ -232,7 +232,7 @@ CORS_ORIGINS=http://localhost:5173,https://finder-admin-dashboard.vercel.app
 ### `ai-service/.env`
 
 ```env
-PORT=5000
+PORT=8000
 PINECONE_API_KEY=
 PINECONE_INDEX=
 ```
@@ -270,9 +270,10 @@ Full deployment instructions are in [README_DEPLOY.md](README_DEPLOY.md).
 
 | Service | Platform |
 |---|---|
-| Backend + AI | [AWS EC2](https://aws.amazon.com/ec2) |
+| Backend | [AWS EC2](https://aws.amazon.com/ec2) |
+| AI Service | [Hugging Face Spaces](https://huggingface.co/spaces) |
 | Admin Dashboard | [Vercel](https://vercel.com) |
-| Database | PostgreSQL (on EC2) |
+| Database | [Supabase](https://supabase.com) |
 | Images | Cloudinary |
 | Vectors | Pinecone |
 

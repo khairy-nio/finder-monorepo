@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../data/models/feed_post_model.dart';
 
-/// Compact, security-focused card for the public home feed.
-/// Shows NO images — uses category icon instead.
-/// Tapping opens PostProtectedPreviewScreen.
+/// Secure feed card — no images, privacy-first, polished.
 class SecureFeedCard extends StatelessWidget {
   final FeedPost post;
 
   const SecureFeedCard({super.key, required this.post});
-
-  static const Color _primary = Color(0xFF0A3D91);
 
   static IconData _categoryIcon(String? category) {
     switch (category?.toLowerCase()) {
@@ -37,179 +35,206 @@ class SecureFeedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLost = post.isLost;
-    final badgeColor = isLost ? const Color(0xFFE53935) : const Color(0xFF2E7D32);
-    final badgeLabel = isLost ? 'LOST' : 'FOUND';
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/post-protected-preview',
-          arguments: {'post': post},
-        );
-      },
+      onTap: () => Navigator.pushNamed(
+        context,
+        '/post-protected-preview',
+        arguments: {'post': post},
+      ),
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1),
+          boxShadow: AppShadows.sm,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Category Icon ────────────────────────────────────────────
+              // ── Category icon ──────────────────────────────────────────
               Container(
-                width: 52,
-                height: 52,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: _primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(14),
+                  color: isLost
+                      ? AppColors.lostBadgeBg
+                      : AppColors.foundBadgeBg,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
                 child: Icon(
                   _categoryIcon(post.category),
-                  color: _primary,
-                  size: 26,
+                  size: 22,
+                  color: isLost ? AppColors.lostBadge : AppColors.foundBadge,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
 
-              // ── Text Content ─────────────────────────────────────────────
+              // ── Content ────────────────────────────────────────────────
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title + Lost/Found badge
+                    // Title row + badge
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
                             post.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1A2E),
-                              height: 1.2,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              height: 1.3,
                             ),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: badgeColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            badgeLabel,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        _TypeBadge(isLost: isLost),
                       ],
                     ),
-                    const SizedBox(height: 4),
 
-                    // Description (short)
+                    // Description
                     if (post.description != null &&
-                        post.description!.isNotEmpty)
+                        post.description!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
                       Text(
                         post.description!,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Colors.grey.shade600,
-                          height: 1.3,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.4,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    const SizedBox(height: 6),
+                    ],
 
-                    // Location + Time row
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Meta row
                     Row(
                       children: [
-                        Icon(Icons.location_on_rounded,
-                            size: 13, color: Colors.grey.shade500),
+                        Icon(
+                          Icons.location_on_rounded,
+                          size: 12,
+                          color: onSurfaceVariant,
+                        ),
                         const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             post.roughLocation,
                             style: TextStyle(
-                                fontSize: 12, color: Colors.grey.shade500),
+                              fontSize: 12,
+                              color: onSurfaceVariant,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Icon(Icons.access_time_rounded,
-                            size: 13, color: Colors.grey.shade400),
+                        const SizedBox(width: AppSpacing.sm),
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 12,
+                          color: onSurfaceVariant,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           post.timeAgo,
                           style: TextStyle(
-                              fontSize: 12, color: Colors.grey.shade400),
+                            fontSize: 12,
+                            color: onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
 
-                    // Protected notice + verified badge
+                    const SizedBox(height: AppSpacing.sm),
+
+                    // Footer: lock notice + verified
                     Row(
                       children: [
-                        Icon(Icons.lock_rounded,
-                            size: 12, color: Colors.grey.shade400),
-                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.lock_outline_rounded,
+                          size: 11,
+                          color: onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 3),
                         Text(
-                          'Sensitive details hidden',
+                          'Details protected',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey.shade400,
+                            color: onSurfaceVariant,
                             fontStyle: FontStyle.italic,
                           ),
                         ),
                         const Spacer(),
-                        if (post.ownerVerified)
-                          Row(
-                            children: [
-                              const Icon(Icons.verified_rounded,
-                                  size: 13, color: Color(0xFF0A3D91)),
-                              const SizedBox(width: 3),
-                              Text(
-                                'Verified',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade500,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                        if (post.ownerVerified) ...[
+                          Icon(
+                            Icons.verified_rounded,
+                            size: 13,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
+                          const SizedBox(width: 3),
+                          Text(
+                            'Verified',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
                 ),
               ),
 
-              // ── Chevron ──────────────────────────────────────────────────
-              Icon(Icons.chevron_right_rounded,
-                  color: Colors.grey.shade300, size: 20),
+              // Chevron
+              Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.sm, top: 2),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TypeBadge extends StatelessWidget {
+  final bool isLost;
+
+  const _TypeBadge({required this.isLost});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isLost ? AppColors.lostBadgeBg : AppColors.foundBadgeBg,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Text(
+        isLost ? 'LOST' : 'FOUND',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+          color: isLost ? AppColors.lostBadge : AppColors.foundBadge,
         ),
       ),
     );

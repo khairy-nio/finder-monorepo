@@ -1,3 +1,4 @@
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:share_plus/share_plus.dart';
@@ -129,7 +130,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
-            backgroundColor: const Color(0xFF0A3D91),
+            backgroundColor: Theme.of(context).colorScheme.primary,
             leading: Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -340,15 +341,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0A3D91).withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 category,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0A3D91),
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             ),
@@ -377,13 +378,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               width: 50,
                               height: 50,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0A3D91).withOpacity(0.1),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.person,
                                 size: 28,
-                                color: Color(0xFF0A3D91),
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -406,10 +407,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                           ),
                                           if (isVerified) ...[
                                             const SizedBox(width: 6),
-                                            const Icon(
+                                            Icon(
                                               Icons.verified,
                                               size: 18,
-                                              color: Color(0xFF0A3D91),
+                                              color: Theme.of(context).colorScheme.primary,
                                             ),
                                           ],
                                         ],
@@ -590,10 +591,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             if (distance.isNotEmpty)
                               Text(
                                 distance,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0A3D91),
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                           ],
@@ -612,10 +613,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0A3D91).withOpacity(0.1),
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.location_on, color: Color(0xFF0A3D91)),
+                                child: Icon(Icons.location_on, color: Theme.of(context).colorScheme.primary),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
@@ -680,11 +681,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF0A3D91)),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.share, color: Color(0xFF0A3D91)),
+                  icon: Icon(Icons.share, color: Theme.of(context).colorScheme.primary),
                   onPressed: () {
                     Share.share('Check this $status item: $title in $location — found on LostFinder app');
                   },
@@ -831,7 +832,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _requestStatus == 'pending' 
                         ? Colors.grey 
-                        : const Color(0xFF0A3D91),
+                        : Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(

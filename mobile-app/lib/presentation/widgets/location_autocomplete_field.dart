@@ -84,12 +84,12 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
                 onFieldSubmitted();
               },
               validator: widget.validator,
-              style: const TextStyle(color: FinderColors.textPrimary, fontSize: 16),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
               decoration: InputDecoration(
                 hintText: widget.hint,
-                hintStyle: const TextStyle(color: FinderColors.textSecondary),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).scaffoldBackgroundColor,
                 prefixIcon: widget.prefixIcon,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -117,7 +117,7 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
               child: Material(
                 elevation: 4,
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 child: Container(
                   width: constraints.maxWidth,
                   margin: EdgeInsets.zero,
@@ -141,7 +141,7 @@ class _LocationAutocompleteFieldState extends State<LocationAutocompleteField> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             decoration: BoxDecoration(
                               border: index != options.length - 1
-                                  ? Border(bottom: BorderSide(color: Colors.grey.shade100))
+                                  ? Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant))
                                   : null,
                             ),
                             child: Row(
@@ -184,7 +184,7 @@ class _HighlightText extends StatelessWidget {
     if (query.isEmpty) {
       return Text(
         text,
-        style: const TextStyle(color: FinderColors.textPrimary, fontSize: 16),
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
       );
     }
 
@@ -194,7 +194,7 @@ class _HighlightText extends StatelessWidget {
     if (!lowercaseText.contains(lowercaseQuery)) {
       return Text(
         text,
-        style: const TextStyle(color: FinderColors.textPrimary, fontSize: 16),
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
       );
     }
 
@@ -203,7 +203,7 @@ class _HighlightText extends StatelessWidget {
 
     return RichText(
       text: TextSpan(
-        style: const TextStyle(color: FinderColors.textPrimary, fontSize: 16),
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
         children: [
           TextSpan(text: text.substring(0, startIndex)),
           TextSpan(

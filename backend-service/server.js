@@ -97,12 +97,12 @@ async function startServer() {
         // In development: alter:true adds missing columns automatically (e.g. password_hash
         // added to User.model.js after the SQLite file was first created).
         // In production: no alter — schema changes must go through a proper migration.
-        console.log('[4/4] Syncing database…');
+        console.log('[4/4] Skipping database sync (to prevent PgBouncer hang)…');
         const sequelize = require('./db/Sequelize');
         try {
-            const isProduction = process.env.NODE_ENV === 'production';
-            await sequelize.sync(isProduction ? {} : { alter: true });
-            console.log('      ✅ Database synced');
+            // const isProduction = process.env.NODE_ENV === 'production';
+            // await sequelize.sync(isProduction ? {} : { alter: true });
+            console.log('      ✅ Database connection assumed ready');
         } catch (dbErr) {
             console.error('      ⚠️  DB sync failed (server still starting):', dbErr.message);
         }

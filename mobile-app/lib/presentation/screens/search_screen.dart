@@ -17,6 +17,67 @@ class SearchScreen extends StatelessWidget {
       appBar: AppBar(title: const Text(AppStrings.searchByImage)),
       body: Consumer<SearchProvider>(
         builder: (context, searchProvider, child) {
+          if (searchProvider.isSearching) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 1500),
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: 0.9 + (0.1 * value),
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.3 * value),
+                                blurRadius: 20 * value,
+                                spreadRadius: 5 * value,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.smart_toy_rounded,
+                            size: 80,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 40),
+                  Text(
+                    'Searching for matches...',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Text(
+                      'Our AI is analyzing your image to find potential matches in the database.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -52,12 +113,10 @@ class SearchScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Results
-                if (searchProvider.isSearching)
-                  const Center(child: CircularProgressIndicator())
-                else if (searchProvider.errorMessage != null)
-                  _buildError(searchProvider)
+                if (searchProvider.errorMessage != null)
+                  _buildError(context, searchProvider)
                 else if (searchProvider.searchResults.isNotEmpty)
-                  _buildResults(searchProvider),
+                  _buildResults(context, searchProvider),
               ],
             ),
           );
@@ -86,11 +145,12 @@ class SearchScreen extends StatelessWidget {
               Container(
                 height: 200,
                 decoration: BoxDecoration(
-                  color: AppColors.greyLight,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.5),
                 ),
                 child: const Center(
-                  child: Icon(Icons.image, size: 64, color: AppColors.grey),
+                  child: Icon(Icons.image, size: 64, color: AppColors.textTertiary),
                 ),
               ),
             const SizedBox(height: 16),
@@ -129,8 +189,13 @@ class SearchScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildError(SearchProvider provider) {
+  Widget _buildError(BuildContext context, SearchProvider provider) {
     return Card(
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppColors.error.withOpacity(0.5)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -139,7 +204,7 @@ class SearchScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               provider.errorMessage!,
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
               textAlign: TextAlign.center,
             ),
           ],
@@ -148,13 +213,17 @@ class SearchScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildResults(SearchProvider provider) {
+  Widget _buildResults(BuildContext context, SearchProvider provider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${provider.searchResults.length} matches found',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          '${provider.searchResults.length} Matches Found',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 12),
         ...provider.searchResults.map((result) {

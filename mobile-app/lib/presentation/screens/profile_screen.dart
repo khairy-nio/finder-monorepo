@@ -3,9 +3,13 @@ import 'package:provider/provider.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/session_service.dart';
 import '../../core/utils/app_messenger.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/dynamic_colors.dart';
 import '../providers/user_provider.dart';
+import '../widgets/app_bottom_nav.dart';
 
-/// Profile Screen
+/// Profile Screen — polished user hub.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -27,791 +31,1008 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final firebaseUser = AuthService.instance.currentUser;
-    final backendUser = context.watch<UserProvider>().backendUser;
+    final backendUser  = context.watch<UserProvider>().backendUser;
 
-    // Prefer backend name; fall back to Firebase displayName.
-    final displayName =
-        backendUser?.name ?? firebaseUser?.displayName ?? 'Unknown User';
-    final email = backendUser?.email ?? firebaseUser?.email ?? '';
-    final trustScore = backendUser?.trustScore;
+    final displayName = backendUser?.name ??
+        firebaseUser?.displayName ??
+        'Unknown User';
+    final email              = backendUser?.email ?? firebaseUser?.email ?? '';
+    final trustScore         = backendUser?.trustScore;
     final verificationStatus = backendUser?.verificationStatus;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0A3D91),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text('Profile'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.notifications_outlined,
+              size: 22,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
+            onPressed: () =>
+                Navigator.pushNamed(context, '/notifications'),
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(width: 48),
-                  const Text(
-                    'Profile',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/notifications');
-                    },
-                  ),
-                ],
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // ── Avatar + identity ────────────────────────────────────────
+            _AvatarSection(
+              backendUser: backendUser,
+              firebaseUser: firebaseUser,
+              displayName: displayName,
+              email: email,
+              trustScore: trustScore,
+              verificationStatus: verificationStatus,
+            ),
+
+            const SizedBox(height: AppSpacing.xl2),
+
+            // ── Trust score card ─────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl2),
+              child: _TrustCard(
+                trustScore: trustScore,
+                verificationStatus: verificationStatus,
+                backendUser: backendUser,
+                isExpanded: _isBreakdownExpanded,
+                onToggleExpand: () => setState(
+                    () => _isBreakdownExpanded = !_isBreakdownExpanded),
               ),
             ),
-          ),
+
+            const SizedBox(height: AppSpacing.lg),
+
+            // ── Recovery rewards card ────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl2),
+              child: _RewardsCard(
+                  points: backendUser?.recoveryPoints ?? 0,
+                  onRedeem: () =>
+                      Navigator.pushNamed(context, '/rewards-catalog')),
+            ),
+
+            const SizedBox(height: AppSpacing.xl2),
+
+            // ── Account section ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl2),
+              child: _AccountSection(
+                backendUser: backendUser,
+                verificationStatus: verificationStatus,
+              ),
+            ),
+
+            const SizedBox(height: AppSpacing.xl2),
+
+            // ── Danger zone ──────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl2),
+              child: _buildLogoutButton(context),
+            ),
+
+            const SizedBox(height: AppSpacing.xl4),
+          ],
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const SizedBox(height: 30),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: NavTab.profile,
+        onTap: (i) {
+          if (i == NavTab.profile) return;
+          AppBottomNav.navigateToTab(context, i);
+        },
+      ),
+    );
+  }
 
-              // Profile Avatar with Edit Button
-              Stack(
-                children: [
-                  Container(
-                    width: 130,
-                    height: 130,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF0A3D91).withOpacity(0.2),
-                      border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: _buildAvatar(backendUser, firebaseUser),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF0A3D91),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // User Name
-              Text(
-                displayName,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+  Widget _buildLogoutButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton.icon(
+        onPressed: () async {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Sign out?'),
+              content: const Text(
+                  'You will need to sign in again to use Finder.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
                 ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Email
-              Text(
-                email,
-                style: TextStyle(fontSize: 15, color: Colors.grey[600]),
-              ),
-
-              // Trust score + verification status badges
-              if (trustScore != null || verificationStatus != null) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  children: [
-                    if (trustScore != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0A3D91).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              color: Color(0xFF0A3D91),
-                              size: 14,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Trust ${trustScore.toStringAsFixed(1)}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF0A3D91),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (verificationStatus != null)
-                      _buildVerificationChip(verificationStatus),
-                  ],
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                  ),
+                  child: const Text('Sign Out'),
                 ),
               ],
+            ),
+          );
+          if (confirm != true || !context.mounted) return;
 
-              const SizedBox(height: 24),
+          await SessionService.instance.clearSession();
+          context.read<UserProvider>().clear();
+          await AuthService.instance.signOut();
+          if (!context.mounted) return;
+          Navigator.pushNamedAndRemoveUntil(
+              context, '/login', (_) => false);
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.error,
+          side: const BorderSide(color: AppColors.error, width: 1.5),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+          minimumSize: Size.zero,
+        ),
+        icon: const Icon(Icons.logout_rounded, size: 18),
+        label: const Text(
+          'Sign Out',
+          style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+}
 
-              // ==================== TRUST SECTION ====================
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.verified_user_rounded, color: _getTrustColor(trustScore ?? 0.0), size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'IDENTITY & SAFETY SCORE',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.grey.shade800,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      // Trust Gauge Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Safety Level',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          _getTrustLabel(trustScore ?? 0.0).toUpperCase(),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w800,
-                                            color: _getTrustColor(trustScore ?? 0.0),
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Text(
-                                      '${(trustScore ?? 0.0).toStringAsFixed(0)}%',
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w900,
-                                        color: _getTrustColor(trustScore ?? 0.0),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: LinearProgressIndicator(
-                                    value: (trustScore ?? 0.0) / 100.0,
-                                    minHeight: 8,
-                                    backgroundColor: Colors.grey.shade200,
-                                    color: _getTrustColor(trustScore ?? 0.0),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      // Status Detail Row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Verification',
-                                style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                              ),
-                              const SizedBox(height: 4),
-                              _buildVerificationChip(verificationStatus ?? 'not_submitted'),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'Safety Standing',
-                                style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(
-                                    (backendUser?.status ?? 'active') == 'active'
-                                        ? Icons.check_circle_rounded
-                                        : Icons.warning_rounded,
-                                    color: (backendUser?.status ?? 'active') == 'active'
-                                        ? Colors.green
-                                        : Colors.red,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    (backendUser?.status ?? 'active').toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: (backendUser?.status ?? 'active') == 'active'
-                                          ? Colors.green
-                                          : Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      const Divider(height: 24),
-                      
-                      // Expandable Trust Breakdown Header
-                      InkWell(
-                        onTap: () {
-                          setState(() {
-                            _isBreakdownExpanded = !_isBreakdownExpanded;
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'View Security Breakdown',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF0A3D91),
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                              Icon(
-                                _isBreakdownExpanded
-                                    ? Icons.keyboard_arrow_up_rounded
-                                    : Icons.keyboard_arrow_down_rounded,
-                                color: const Color(0xFF0A3D91),
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+// ─── Avatar Section ───────────────────────────────────────────────────────────
 
-                      if (_isBreakdownExpanded) ...[
-                        const SizedBox(height: 12),
-                        // Breakdown list
-                        _buildBreakdownItem(
-                          label: 'Identity Verified',
-                          isMet: backendUser?.verificationStatus == 'approved',
-                          pts: '+45 Pts',
-                        ),
-                        _buildBreakdownItem(
-                          label: 'Phone Verified',
-                          isMet: backendUser?.phoneNumber != null &&
-                              backendUser!.phoneNumber!.trim().isNotEmpty,
-                          pts: '+10 Pts',
-                        ),
-                        _buildBreakdownItem(
-                          label: 'Complete Address',
-                          isMet: backendUser?.country != null &&
-                              backendUser!.country!.trim().isNotEmpty &&
-                              backendUser?.city != null &&
-                              backendUser!.city!.trim().isNotEmpty &&
-                              backendUser?.area != null &&
-                              backendUser!.area!.trim().isNotEmpty,
-                          pts: '+10 Pts',
-                        ),
-                        _buildBreakdownItem(
-                          label: 'Profile Photo / Verified Selfie',
-                          isMet: backendUser?.profileImageUrl != null ||
-                              backendUser?.selfieImageUrl != null,
-                          pts: '+5 Pts',
-                        ),
-                        _buildBreakdownItem(
-                          label: 'Good Moderation Standing',
-                          isMet: backendUser?.status == 'active' &&
-                              (backendUser?.trustScore ?? 0.0) >= 40.0,
-                          pts: '+5 Pts',
-                        ),
-                        _buildBreakdownItem(
-                          label: 'Account Age & History',
-                          isMet: (backendUser?.createdAt != null &&
-                              DateTime.now().difference(backendUser!.createdAt).inDays >= 30),
-                          pts: 'Up to +5 Pts',
-                        ),
-                        const Divider(height: 20),
-                        // Advanced Factors Section
-                        const Text(
-                          'Advanced Security (Exceeding 70-80%):',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildBreakdownItem(
-                          label: 'Successful Recovery History',
-                          isMet: (backendUser?.trustScore ?? 0.0) >= 80.0 || (backendUser?.recoveryPoints ?? 0) > 0,
-                          pts: 'Up to +15 Pts',
-                        ),
-                        _buildBreakdownItem(
-                          label: 'Long-term Trust Standing (>90 days)',
-                          isMet: (backendUser?.createdAt != null &&
-                              DateTime.now().difference(backendUser!.createdAt).inDays > 90),
-                          pts: '+5 Pts',
-                        ),
-                        _buildBreakdownItem(
-                          label: 'Long-term Account Age (>150 days)',
-                          isMet: (backendUser?.createdAt != null &&
-                              DateTime.now().difference(backendUser!.createdAt).inDays > 150),
-                          pts: 'Up to +5 Pts',
-                        ),
-                        const SizedBox(height: 12),
-                        // Helper Explanation Box
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: const Text(
-                            'Maintain a verified account, avoid moderation issues, and complete successful recoveries to increase trust over time.',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.black54,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+class _AvatarSection extends StatelessWidget {
+  final dynamic backendUser;
+  final dynamic firebaseUser;
+  final String displayName;
+  final String email;
+  final double? trustScore;
+  final String? verificationStatus;
+
+  const _AvatarSection({
+    required this.backendUser,
+    required this.firebaseUser,
+    required this.displayName,
+    required this.email,
+    required this.trustScore,
+    required this.verificationStatus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarUrl = backendUser?.profileImageUrl ??
+        backendUser?.selfieImageUrl ??
+        firebaseUser?.photoURL;
+
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl2, AppSpacing.xl2, AppSpacing.xl2, AppSpacing.xl2),
+      child: Column(
+        children: [
+          // Avatar
+          Stack(
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  border: Border.all(
+                      color: Theme.of(context).colorScheme.outline, width: 3),
                 ),
+                child: ClipOval(child: _buildAvatarContent(avatarUrl, context)),
               ),
-
-              const SizedBox(height: 20),
-
-              // ==================== RECOVERY SECTION ====================
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.orange.shade50, Colors.amber.shade50],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/edit-profile'),
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: Theme.of(context).scaffoldBackgroundColor, width: 2),
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.amber.shade200),
+                    child: const Icon(Icons.edit_rounded,
+                        size: 14, color: AppColors.white),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.emoji_events, color: Colors.orange, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'RECOVERY REWARDS',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange.shade900,
-                                  letterSpacing: 1.1,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.star, color: Colors.orange, size: 12),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '${backendUser?.recoveryPoints ?? 0} Pts',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange.shade900,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Earn points by returning lost items, resolving claims, and assisting the community.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange.shade900.withOpacity(0.8),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Redeem Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/rewards-catalog');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFA500), // Premium Orange
-                            foregroundColor: Colors.white,
-                            elevation: 1,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.shopping_bag_outlined),
-                          label: const Text(
-                            'Redeem Community Rewards',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ==================== SETTINGS / ACTIONS ====================
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ACCOUNT SETTINGS',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[500],
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // My Posts
-                    _buildMenuItem(
-                      icon: Icons.grid_view,
-                      iconColor: const Color(0xFF0A3D91),
-                      title: 'My Posts',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/my-posts');
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Verify Account (KYC)
-                    if (verificationStatus != 'approved') ...[
-                      _buildMenuItem(
-                        icon: Icons.verified_user_outlined,
-                        iconColor: const Color(0xFF0A3D91),
-                        title: verificationStatus == 'pending' ? 'Verification Pending' : 'Verify Account',
-                        onTap: () async {
-                          if (verificationStatus == 'pending') {
-                            AppMessenger.showInfo('Your verification request is still pending review.');
-                            return;
-                          }
-                          await Navigator.pushNamed(
-                            context,
-                            '/privacy-policy',
-                            arguments: {'isFromOnboarding': true},
-                          );
-                          if (context.mounted) {
-                            await context.read<UserProvider>().loadUser();
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    // Settings
-                    _buildMenuItem(
-                      icon: Icons.settings_outlined,
-                      iconColor: const Color(0xFF0A3D91),
-                      title: 'Settings',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/settings');
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Support
-                    _buildMenuItem(
-                      icon: Icons.help_outline,
-                      iconColor: const Color(0xFF0A3D91),
-                      title: 'Support',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/support');
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Report a Problem
-                    _buildMenuItem(
-                      icon: Icons.report_problem_outlined,
-                      iconColor: const Color(0xFF0A3D91),
-                      title: 'Report a problem',
-                      onTap: () {
-                        Navigator.pushNamed(context, '/report-problem');
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Privacy Policy
-                    _buildMenuItem(
-                      icon: Icons.shield_outlined,
-                      iconColor: const Color(0xFF0A3D91),
-                      title: 'Privacy Policy',
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/privacy-policy',
-                          arguments: {'isFromOnboarding': false},
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // Log Out Button
-                    Center(
-                      child: TextButton.icon(
-                        onPressed: () async {
-                          // Clear session
-                          await SessionService.instance.clearSession();
-                          // Clear backend user state
-                          context.read<UserProvider>().clear();
-                          // Sign out from Firebase
-                          await AuthService.instance.signOut();
-                          if (!context.mounted) return;
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            '/login',
-                            (route) => false,
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.logout,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                        label: const Text(
-                          'Log Out',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ),
-                    ),
-
-
-                    const SizedBox(height: 40),
-                  ],
                 ),
               ),
             ],
           ),
-        ),
-      ),
-      bottomNavigationBar: Stack(
-        children: [
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
-              ],
+
+          const SizedBox(height: AppSpacing.md),
+
+          // Name
+          Text(
+            displayName,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            email,
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+
+          // Verification badge
+          if (verificationStatus != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            _VerificationBadge(status: verificationStatus!),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarContent(String? url, BuildContext context) {
+    if (url != null && url.isNotEmpty) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Icon(
+          Icons.person_rounded,
+          size: 48,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        loadingBuilder: (ctx, child, progress) {
+          if (progress == null) return child;
+          return Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Theme.of(context).colorScheme.primary),
+            ),
+          );
+        },
+      );
+    }
+    return Icon(
+        Icons.person_rounded, size: 48, color: Theme.of(context).colorScheme.primary);
+  }
+}
+
+// ─── Trust Card ───────────────────────────────────────────────────────────────
+
+class _TrustCard extends StatelessWidget {
+  final double? trustScore;
+  final String? verificationStatus;
+  final dynamic backendUser;
+  final bool isExpanded;
+  final VoidCallback onToggleExpand;
+
+  const _TrustCard({
+    required this.trustScore,
+    required this.verificationStatus,
+    required this.backendUser,
+    required this.isExpanded,
+    required this.onToggleExpand,
+  });
+
+  Color _trustColor(double s, BuildContext context) {
+    if (s <= 30) return AppColors.error;
+    if (s <= 60) return AppColors.warning;
+    if (s <= 80) return Theme.of(context).colorScheme.primary;
+    if (s <= 95) return const Color(0xFF0D9488);
+    return AppColors.goldDark;
+  }
+
+  String _trustLabel(double s) {
+    if (s <= 30) return 'Low Trust';
+    if (s <= 60) return 'Basic';
+    if (s <= 80) return 'Trusted';
+    if (s <= 95) return 'Highly Trusted';
+    return 'Elite';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final score = trustScore ?? 0.0;
+    final color = _trustColor(score, context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 40),
-                Container(
-                  height: 60,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF0A3D91),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
+                // Header row
+                Row(
+                  children: [
+                    Icon(Icons.verified_user_rounded,
+                        size: 16, color: color),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Identity & Safety Score',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        letterSpacing: 0.2,
+                      ),
                     ),
-                  ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusFull),
+                      ),
+                      child: Text(
+                        _trustLabel(score),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: AppSpacing.lg),
+
+                // Progress row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusFull),
+                            child: LinearProgressIndicator(
+                              value: score / 100.0,
+                              minHeight: 8,
+                              backgroundColor: context.colors.neutral200,
+                              color: color,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Safety level',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              Text(
+                                '${score.toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: color,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: AppSpacing.lg),
+
+                // Status row
+                Row(
+                  children: [
+                    _InfoChip(
+                      label: 'Standing',
+                      value: (backendUser?.status ?? 'active').toUpperCase(),
+                      valueColor:
+                          (backendUser?.status ?? 'active') == 'active'
+                              ? AppColors.success
+                              : AppColors.error,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    if (verificationStatus != null)
+                      _InfoChip(
+                        label: 'Verification',
+                        value: _verificationLabel(verificationStatus!),
+                        valueColor:
+                            _verificationColor(verificationStatus!),
+                      ),
+                  ],
                 ),
               ],
             ),
           ),
-          Positioned(
-            top: 10,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildNavButton(Icons.home, false, () {
-                  Navigator.pushReplacementNamed(context, '/home');
-                }),
-                _buildNavButton(Icons.chat_bubble_outline_sharp, false, () {
-                  Navigator.pushNamed(context, '/messages');
-                }),
-                _buildNavButton(Icons.file_upload_outlined, false, () {
-                  Navigator.pushNamed(context, '/create-post');
-                }),
-                _buildNavButton(Icons.person, true, () {}),
-              ],
+
+          // Expand toggle
+          GestureDetector(
+            onTap: onToggleExpand,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              decoration: BoxDecoration(
+                color: context.colors.neutral50,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(AppSpacing.radiusLg),
+                  bottomRight: Radius.circular(AppSpacing.radiusLg),
+                ),
+                border: Border(
+                  top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'View score breakdown',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          if (isExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+              child: _BreakdownList(backendUser: backendUser),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _verificationLabel(String s) {
+    switch (s) {
+      case 'approved': return 'Verified';
+      case 'pending':  return 'Pending';
+      case 'rejected': return 'Rejected';
+      default:         return 'Unverified';
+    }
+  }
+
+  Color _verificationColor(String s) {
+    switch (s) {
+      case 'approved': return AppColors.success;
+      case 'pending':  return AppColors.warning;
+      case 'rejected': return AppColors.error;
+      default:         return AppColors.textSecondary;
+    }
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  const _InfoChip(
+      {required this.label,
+      required this.value,
+      required this.valueColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: context.colors.neutral50,
+          borderRadius:
+              BorderRadius.circular(AppSpacing.radiusSm),
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: valueColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BreakdownList extends StatelessWidget {
+  final dynamic backendUser;
+
+  const _BreakdownList({required this.backendUser});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _BreakdownItemData(
+        'Identity Verified',
+        backendUser?.verificationStatus == 'approved',
+        '+45 pts',
+      ),
+      _BreakdownItemData(
+        'Phone Verified',
+        backendUser?.phoneNumber != null &&
+            (backendUser!.phoneNumber as String).trim().isNotEmpty,
+        '+10 pts',
+      ),
+      _BreakdownItemData(
+        'Complete Address',
+        backendUser?.country != null &&
+            (backendUser!.country as String).trim().isNotEmpty,
+        '+10 pts',
+      ),
+      _BreakdownItemData(
+        'Profile Photo',
+        backendUser?.profileImageUrl != null ||
+            backendUser?.selfieImageUrl != null,
+        '+5 pts',
+      ),
+      _BreakdownItemData(
+        'Good Moderation Standing',
+        backendUser?.status == 'active' &&
+            (backendUser?.trustScore ?? 0.0) >= 40.0,
+        '+5 pts',
+      ),
+      _BreakdownItemData(
+        'Account Age (30+ days)',
+        backendUser?.createdAt != null &&
+            DateTime.now()
+                .difference(backendUser!.createdAt)
+                .inDays >= 30,
+        '+5 pts',
+      ),
+    ];
+
+    return Column(
+      children: [
+        const Divider(height: 24),
+        ...items.map((item) => _BreakdownRow(item: item)),
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.infoMuted,
+            borderRadius:
+                BorderRadius.circular(AppSpacing.radiusSm),
+          ),
+          child: const Text(
+            'Complete verifications and maintain good standing to increase your score over time.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.info,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BreakdownItemData {
+  final String label;
+  final bool isMet;
+  final String pts;
+
+  _BreakdownItemData(this.label, this.isMet, this.pts);
+}
+
+class _BreakdownRow extends StatelessWidget {
+  final _BreakdownItemData item;
+
+  const _BreakdownRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Icon(
+            item.isMet
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
+            size: 16,
+            color: item.isMet ? AppColors.success : AppColors.neutral300,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              item.label,
+              style: TextStyle(
+                fontSize: 13,
+                color: item.isMet
+                    ? Theme.of(context).colorScheme.onSurface
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: item.isMet
+                    ? FontWeight.w500
+                    : FontWeight.w400,
+              ),
+            ),
+          ),
+          Text(
+            item.pts,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: item.isMet
+                  ? AppColors.success
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildAvatar(backendUser, firebaseUser) {
-    final avatarUrl = backendUser?.profileImageUrl ?? 
-                      backendUser?.selfieImageUrl ?? 
-                      firebaseUser?.photoURL;
+// ─── Rewards Card ─────────────────────────────────────────────────────────────
 
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(65),
-        child: Image.network(
-          avatarUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => const Icon(
-            Icons.person,
-            size: 60,
-            color: Color(0xFF0A3D91),
-          ),
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Center(
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                    : null,
-                strokeWidth: 2,
-                color: const Color(0xFF0A3D91),
-              ),
-            );
-          },
+class _RewardsCard extends StatelessWidget {
+  final int points;
+  final VoidCallback onRedeem;
+
+  const _RewardsCard({required this.points, required this.onRedeem});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFEF3C7), Color(0xFFFDE68A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      );
-    }
-
-    return const Icon(
-      Icons.person,
-      size: 60,
-      color: Color(0xFF0A3D91),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        border: Border.all(color: const Color(0xFFFCD34D)),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.emoji_events_rounded,
+                  size: 18, color: AppColors.goldDark),
+              const SizedBox(width: AppSpacing.sm),
+              const Text(
+                'Recovery Rewards',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.goldDark,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDE68A),
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusFull),
+                  border: Border.all(
+                      color: const Color(0xFFFCD34D)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star_rounded,
+                        size: 12, color: AppColors.goldDark),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$points pts',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.goldDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            'Earn points by returning lost items and helping the community.',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.goldDark,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton(
+              onPressed: onRedeem,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.goldDark,
+                foregroundColor: AppColors.white,
+                elevation: 0,
+                minimumSize: Size.zero,
+                shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(AppSpacing.radiusSm)),
+              ),
+              child: const Text(
+                'Redeem Rewards',
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildVerificationChip(String status) {
+// ─── Account Section ──────────────────────────────────────────────────────────
+
+class _AccountSection extends StatelessWidget {
+  final dynamic backendUser;
+  final String? verificationStatus;
+
+  const _AccountSection(
+      {required this.backendUser, required this.verificationStatus});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'ACCOUNT',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.0,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
+          ),
+          child: Column(
+            children: [
+              _MenuItem(
+                icon: Icons.grid_view_rounded,
+                label: 'My Posts',
+                onTap: () =>
+                    Navigator.pushNamed(context, '/my-posts'),
+              ),
+              if (verificationStatus != 'approved')
+                _MenuItem(
+                  icon: Icons.verified_user_outlined,
+                  label: verificationStatus == 'pending'
+                      ? 'Verification Pending'
+                      : 'Verify Account',
+                  badge: verificationStatus == 'pending'
+                      ? 'Pending'
+                      : 'Action needed',
+                  badgeColor: verificationStatus == 'pending'
+                      ? AppColors.warning
+                      : Theme.of(context).colorScheme.primary,
+                  onTap: () async {
+                    if (verificationStatus == 'pending') {
+                      AppMessenger.showInfo(
+                          'Your verification request is still pending review.');
+                      return;
+                    }
+                    await Navigator.pushNamed(
+                      context,
+                      '/privacy-policy',
+                      arguments: {'isFromOnboarding': true},
+                    );
+                    if (context.mounted) {
+                      await context.read<UserProvider>().loadUser();
+                    }
+                  },
+                ),
+              _MenuItem(
+                icon: Icons.settings_outlined,
+                label: 'Settings',
+                onTap: () =>
+                    Navigator.pushNamed(context, '/settings'),
+              ),
+              _MenuItem(
+                icon: Icons.help_outline_rounded,
+                label: 'Support',
+                onTap: () =>
+                    Navigator.pushNamed(context, '/support'),
+              ),
+              _MenuItem(
+                icon: Icons.flag_outlined,
+                label: 'Report a Problem',
+                onTap: () =>
+                    Navigator.pushNamed(context, '/report-problem'),
+              ),
+              _MenuItem(
+                icon: Icons.shield_outlined,
+                label: 'Privacy Policy',
+                isLast: true,
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  '/privacy-policy',
+                  arguments: {'isFromOnboarding': false},
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String? badge;
+  final Color? badgeColor;
+  final VoidCallback onTap;
+  final bool isLast;
+
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.badge,
+    this.badgeColor,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: isLast
+              ? const BorderRadius.only(
+                  bottomLeft: Radius.circular(AppSpacing.radiusLg),
+                  bottomRight: Radius.circular(AppSpacing.radiusLg),
+                )
+              : BorderRadius.zero,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: context.colors.neutral100,
+                    borderRadius:
+                        BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: Icon(icon,
+                      size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                if (badge != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: (badgeColor ?? Theme.of(context).colorScheme.primary)
+                          .withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusFull),
+                    ),
+                    child: Text(
+                      badge!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: badgeColor ?? Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+                Icon(Icons.chevron_right_rounded,
+                    size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+        if (!isLast)
+          const Divider(
+              height: 1,
+              indent: AppSpacing.lg + 36 + AppSpacing.md,
+              endIndent: 0),
+      ],
+    );
+  }
+}
+
+// ─── Verification Badge ───────────────────────────────────────────────────────
+
+class _VerificationBadge extends StatelessWidget {
+  final String status;
+
+  const _VerificationBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
     Color bg;
     Color fg;
     IconData icon;
@@ -819,171 +1040,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     switch (status) {
       case 'approved':
-        bg = Colors.green.shade50;
-        fg = Colors.green.shade700;
-        icon = Icons.verified;
-        label = 'Verified';
+        bg    = AppColors.successMuted;
+        fg    = AppColors.success;
+        icon  = Icons.verified_rounded;
+        label = 'Identity Verified';
         break;
       case 'pending':
-        bg = Colors.amber.shade50;
-        fg = Colors.amber.shade800;
-        icon = Icons.hourglass_top;
-        label = 'Pending';
+        bg    = AppColors.warningMuted;
+        fg    = AppColors.warning;
+        icon  = Icons.hourglass_top_rounded;
+        label = 'Verification Pending';
         break;
       case 'rejected':
-        bg = Colors.red.shade50;
-        fg = Colors.red.shade700;
-        icon = Icons.cancel_outlined;
-        label = 'Rejected';
+        bg    = AppColors.errorMuted;
+        fg    = AppColors.error;
+        icon  = Icons.cancel_outlined;
+        label = 'Verification Rejected';
         break;
       default:
-        bg = Colors.grey.shade100;
-        fg = Colors.grey.shade600;
-        icon = Icons.shield_outlined;
+        bg    = context.colors.neutral100;
+        fg    = Theme.of(context).colorScheme.onSurfaceVariant;
+        icon  = Icons.shield_outlined;
         label = 'Unverified';
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius:
+            BorderRadius.circular(AppSpacing.radiusFull),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: fg, size: 14),
-          const SizedBox(width: 4),
+          Icon(icon, size: 13, color: fg),
+          const SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: fg,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-            Icon(Icons.chevron_right, color: Colors.grey[400], size: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavButton(IconData icon, bool isActive, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF0A3D91) : Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(
-          icon,
-          color: isActive ? Colors.white : Colors.grey[600],
-          size: 38,
-        ),
-      ),
-    );
-  }
-
-  String _getTrustLabel(double score) {
-    if (score <= 30) return 'Low Trust';
-    if (score <= 60) return 'Basic Verified';
-    if (score <= 80) return 'Trusted User';
-    if (score <= 95) return 'Highly Trusted';
-    return 'Elite Trusted';
-  }
-
-  Color _getTrustColor(double score) {
-    if (score <= 30) return Colors.red.shade700;
-    if (score <= 60) return Colors.orange.shade700;
-    if (score <= 80) return const Color(0xFF0A3D91);
-    if (score <= 95) return Colors.teal.shade700;
-    return const Color(0xFFD4AF37); // Gold
-  }
-
-  Widget _buildBreakdownItem({
-    required String label,
-    required bool isMet,
-    required String pts,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Icon(
-            isMet ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-            color: isMet ? Colors.green.shade600 : Colors.grey.shade400,
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: isMet ? Colors.black87 : Colors.black54,
-                fontWeight: isMet ? FontWeight.w500 : FontWeight.normal,
-              ),
-            ),
-          ),
-          Text(
-            pts,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: isMet ? Colors.green.shade700 : Colors.grey,
             ),
           ),
         ],

@@ -15,8 +15,8 @@ class SupportRequestDetailScreen extends StatelessWidget {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: Container(
-          decoration: const BoxDecoration(
-            color: FinderColors.primaryBlue,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(30),
               bottomRight: Radius.circular(30),
@@ -188,18 +188,21 @@ class SupportRequestDetailScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     _buildTimelineStep(
+                      context: context,
                       title: 'Submitted',
                       description: 'Your request was received.',
                       isCompleted: true,
                       isLast: false,
                     ),
                     _buildTimelineStep(
+                      context: context,
                       title: 'Under Review',
                       description: 'A support agent is looking into this.',
                       isCompleted: ticketData['status'] == 'In Progress' || ticketData['status'] == 'Resolved',
                       isLast: false,
                     ),
                     _buildTimelineStep(
+                      context: context,
                       title: 'Resolved',
                       description: 'The issue has been closed.',
                       isCompleted: ticketData['status'] == 'Resolved',
@@ -226,9 +229,9 @@ class SupportRequestDetailScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: FinderColors.primaryBlue.withOpacity(0.05),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: FinderColors.primaryBlue.withOpacity(0.2)),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,14 +239,14 @@ class SupportRequestDetailScreen extends StatelessWidget {
                       Row(
                         children: [
                           CircleAvatar(
-                            backgroundColor: FinderColors.primaryBlue.withOpacity(0.2),
+                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                             radius: 16,
-                            child: const Icon(Icons.support_agent, size: 18, color: FinderColors.primaryBlue),
+                            child: Icon(Icons.support_agent, size: 18, color: Theme.of(context).colorScheme.primary),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
+                          Text(
                             'Support Agent',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: FinderColors.primaryBlue),
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                           ),
                         ],
                       ),
@@ -270,6 +273,7 @@ class SupportRequestDetailScreen extends StatelessWidget {
   }
 
   Widget _buildTimelineStep({
+    required BuildContext context,
     required String title,
     required String description,
     required bool isCompleted,
@@ -284,10 +288,10 @@ class SupportRequestDetailScreen extends StatelessWidget {
               width: 24,
               height: 24,
               decoration: BoxDecoration(
-                color: isCompleted ? FinderColors.primaryBlue : Colors.white,
+                color: isCompleted ? Theme.of(context).colorScheme.primary : Colors.white,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isCompleted ? FinderColors.primaryBlue : Colors.grey[300]!,
+                  color: isCompleted ? Theme.of(context).colorScheme.primary : Colors.grey[300]!,
                   width: 2,
                 ),
               ),
@@ -299,7 +303,7 @@ class SupportRequestDetailScreen extends StatelessWidget {
               Container(
                 width: 2,
                 height: 40,
-                color: isCompleted ? FinderColors.primaryBlue : Colors.grey[200],
+                color: isCompleted ? Theme.of(context).colorScheme.primary : Colors.grey[200],
               ),
           ],
         ),

@@ -196,8 +196,10 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
         filePath: imagePath,
         fields: fields,
       );
-      final List<dynamic> resultsJson =
-          response['data'] as List<dynamic>? ?? [];
+      final dynamic data = response['data'];
+      final List<dynamic> resultsJson = data != null && data is Map<String, dynamic>
+          ? (data['matches'] as List<dynamic>? ?? [])
+          : (data as List<dynamic>? ?? []);
       return resultsJson
           .map((json) =>
               SearchResultModel.fromJson(json as Map<String, dynamic>))

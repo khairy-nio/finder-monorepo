@@ -12,10 +12,13 @@ class ApiClient {
   ApiClient({http.Client? client, this.authToken, this.tokenProvider})
       : client = client ?? http.Client();
 
-  /// Helper to get headers with optional auth token
+  /// Helper to get headers with optional auth token.
+  /// Prefers [tokenProvider] (always returns a fresh Firebase token) over
+  /// the static [authToken] field, which may be stale after the 1-hour expiry.
   Future<Map<String, String>> _getHeaders() async {
     final headers = Map<String, String>.from(ApiConstants.headers);
-    final token = authToken ?? await tokenProvider?.call();
+    // Always prefer tokenProvider so Firebase auto-refreshes the token.
+    final token = await tokenProvider?.call() ?? authToken;
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }

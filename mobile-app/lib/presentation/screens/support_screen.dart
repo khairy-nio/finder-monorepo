@@ -87,8 +87,8 @@ class _SupportScreenState extends State<SupportScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: Container(
-          decoration: const BoxDecoration(
-            color: FinderColors.primaryBlue,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(30),
               bottomRight: Radius.circular(30),
@@ -230,19 +230,19 @@ class _SupportScreenState extends State<SupportScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: FinderColors.primaryBlue.withOpacity(0.05),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: FinderColors.primaryBlue.withOpacity(0.2)),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Still need help?',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: FinderColors.primaryBlue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -264,7 +264,7 @@ class _SupportScreenState extends State<SupportScreen> {
                               style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: FinderColors.primaryBlue,
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               elevation: 0,
@@ -284,13 +284,13 @@ class _SupportScreenState extends State<SupportScreen> {
                                 }
                               }
                             },
-                            icon: const Icon(Icons.phone_outlined, color: FinderColors.primaryBlue, size: 20),
-                            label: const Text(
+                            icon: Icon(Icons.phone_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+                            label: Text(
                               'Call',
-                              style: TextStyle(color: FinderColors.primaryBlue, fontWeight: FontWeight.w600),
+                              style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: FinderColors.primaryBlue),
+                              side: BorderSide(color: Theme.of(context).colorScheme.primary),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
@@ -351,15 +351,15 @@ class _SupportScreenState extends State<SupportScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: FinderColors.primaryBlue, size: 28),
+                Icon(icon, color: Theme.of(context).colorScheme.primary, size: 28),
                 const SizedBox(height: 8),
                 Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: FinderColors.primaryBlue,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
@@ -387,7 +387,7 @@ class _SupportScreenState extends State<SupportScreen> {
             color: Colors.black87,
           ),
         ),
-        iconColor: FinderColors.primaryBlue,
+        iconColor: Theme.of(context).colorScheme.primary,
         collapsedIconColor: Colors.grey,
         children: [
           Padding(
@@ -434,10 +434,10 @@ class _SupportScreenState extends State<SupportScreen> {
 
   Widget _buildMyRequestsList() {
     if (_isLoadingRequests) {
-      return const Center(
+      return Center(
         child: Padding(
           padding: EdgeInsets.all(32.0),
-          child: CircularProgressIndicator(color: FinderColors.primaryBlue),
+          child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
         ),
       );
     }

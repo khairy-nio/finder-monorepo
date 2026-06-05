@@ -17,6 +17,11 @@ class SearchResultCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
+      color: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.6)),
+      ),
       child: InkWell(
         onTap: () {
           Navigator.pushNamed(context, '/post-detail', arguments: {
@@ -55,13 +60,13 @@ class SearchResultCard extends StatelessWidget {
                   placeholder: (context, url) => Container(
                     width: 100,
                     height: 100,
-                    color: AppColors.greyLight,
+                    color: AppColors.neutral100,
                     child: const Center(child: CircularProgressIndicator()),
                   ),
                   errorWidget: (context, url, error) => Container(
                     width: 100,
                     height: 100,
-                    color: AppColors.greyLight,
+                    color: AppColors.neutral100,
                     child: const Icon(Icons.error),
                   ),
                 ),
@@ -113,7 +118,7 @@ class SearchResultCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           post.category,
-                          style: TextStyle(fontSize: 12, color: AppColors.grey),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -133,7 +138,7 @@ class SearchResultCard extends StatelessWidget {
     } else if (similarity >= 0.6) {
       return AppColors.warning;
     } else {
-      return AppColors.grey;
+      return AppColors.textTertiary;
     }
   }
 
@@ -142,7 +147,7 @@ class SearchResultCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isLost ? AppColors.lostColor : AppColors.foundColor,
+        color: isLost ? AppColors.lostBadge : AppColors.foundBadge,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

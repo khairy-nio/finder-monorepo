@@ -1,35 +1,68 @@
 import 'package:flutter/material.dart';
 
-/// App Color Palette
+/// Unified Design System — Color Tokens
+/// Single source of truth for the entire application.
 class AppColors {
-  // Primary Colors
-  static const Color primary = Color(0xFF6C63FF);
-  static const Color primaryDark = Color(0xFF5548C8);
-  static const Color primaryLight = Color(0xFF8F87FF);
+  // ── Brand / Primary ────────────────────────────────────────────────────────
+  static const Color primary        = Color(0xFF1A56DB);
+  static const Color primaryDark    = Color(0xFF1340A8);
+  static const Color primaryLight   = Color(0xFF3B7BEF);
+  static const Color primaryMuted   = Color(0xFFEEF3FE);
 
-  // Secondary Colors
-  static const Color secondary = Color(0xFFFF6584);
-  static const Color secondaryDark = Color(0xFFE5425D);
-  static const Color secondaryLight = Color(0xFFFF8BA0);
+  // ── Semantic Status ────────────────────────────────────────────────────────
+  static const Color success        = Color(0xFF16A34A);
+  static const Color successMuted   = Color(0xFFDCFCE7);
+  static const Color error          = Color(0xFFDC2626);
+  static const Color errorMuted     = Color(0xFFFEE2E2);
+  static const Color warning        = Color(0xFFF59E0B);
+  static const Color warningMuted   = Color(0xFFFEF3C7);
+  static const Color info           = Color(0xFF0891B2);
+  static const Color infoMuted      = Color(0xFFE0F2FE);
 
-  // Neutral Colors
-  static const Color white = Color(0xFFFFFFFF);
-  static const Color black = Color(0xFF000000);
-  static const Color grey = Color(0xFF9E9E9E);
-  static const Color greyLight = Color(0xFFE0E0E0);
-  static const Color greyDark = Color(0xFF616161);
+  // ── Post Type ──────────────────────────────────────────────────────────────
+  static const Color lostBadge      = Color(0xFFDC2626);
+  static const Color lostBadgeBg    = Color(0xFFFEE2E2);
+  static const Color foundBadge     = Color(0xFF16A34A);
+  static const Color foundBadgeBg   = Color(0xFFDCFCE7);
 
-  // Background Colors
-  static const Color background = Color(0xFFF5F5F5);
-  static const Color surface = Color(0xFFFFFFFF);
+  // ── Neutral Scale ──────────────────────────────────────────────────────────
+  static const Color white          = Color(0xFFFFFFFF);
+  static const Color black          = Color(0xFF000000);
+  static const Color neutral50      = Color(0xFFF8FAFC);
+  static const Color neutral100     = Color(0xFFF1F5F9);
+  static const Color neutral200     = Color(0xFFE2E8F0);
+  static const Color neutral300     = Color(0xFFCBD5E1);
+  static const Color neutral400     = Color(0xFF94A3B8);
+  static const Color neutral500     = Color(0xFF64748B);
+  static const Color neutral600     = Color(0xFF475569);
+  static const Color neutral700     = Color(0xFF334155);
+  static const Color neutral800     = Color(0xFF1E293B);
+  static const Color neutral900     = Color(0xFF0F172A);
 
-  // Status Colors
-  static const Color success = Color(0xFF4CAF50);
-  static const Color error = Color(0xFFF44336);
-  static const Color warning = Color(0xFFFF9800);
-  static const Color info = Color(0xFF2196F3);
+  // ── Surface / Background ──────────────────────────────────────────────────
+  static const Color background     = Color(0xFFF8FAFC);
+  static const Color surface        = Color(0xFFFFFFFF);
+  static const Color surfaceVariant = Color(0xFFF1F5F9);
 
-  // Post Type Colors
-  static const Color lostColor = Color(0xFFE74C3C);
-  static const Color foundColor = Color(0xFF2ECC71);
+  // ── Text ──────────────────────────────────────────────────────────────────
+  static const Color textPrimary    = Color(0xFF0F172A);
+  static const Color textSecondary  = Color(0xFF475569);
+  static const Color textTertiary   = Color(0xFF94A3B8);
+  static const Color textDisabled   = Color(0xFFCBD5E1);
+  static const Color textInverse    = Color(0xFFFFFFFF);
+
+  // ── Border / Divider ──────────────────────────────────────────────────────
+  static const Color border         = Color(0xFFE2E8F0);
+  static const Color borderFocus    = Color(0xFF1A56DB);
+  static const Color divider        = Color(0xFFF1F5F9);
+
+  // ── Rewards / Gold ────────────────────────────────────────────────────────
+  static const Color gold           = Color(0xFFF59E0B);
+  static const Color goldMuted      = Color(0xFFFEF3C7);
+  static const Color goldDark       = Color(0xFFD97706);
+
+  // ── Shadows ───────────────────────────────────────────────────────────────
+  static const Color shadowSm       = Color(0x0A0F172A);   // 4% opacity
+  static const Color shadowMd       = Color(0x120F172A);   // 7% opacity
+  static const Color shadowLg       = Color(0x1A0F172A);   // 10% opacity
 }

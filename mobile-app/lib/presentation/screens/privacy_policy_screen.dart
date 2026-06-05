@@ -90,8 +90,8 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: Container(
-          decoration: const BoxDecoration(
-            color: FinderColors.primaryBlue,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(30),
               bottomRight: Radius.circular(30),
@@ -142,10 +142,10 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: FinderColors.primaryBlue.withOpacity(0.05),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: FinderColors.primaryBlue.withOpacity(0.2),
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                           ),
                         ),
                         child: Column(
@@ -153,9 +153,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                           children: [
                             Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.info_outline,
-                                  color: FinderColors.primaryBlue,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -164,18 +164,18 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: FinderColors.primaryBlue.withOpacity(0.8),
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 12),
-                            const Text(
+                            Text(
                               'We value your privacy and are committed to protecting your personal data. Please read these terms carefully before proceeding with identity verification.',
                               style: TextStyle(
                                 fontSize: 15,
-                                color: FinderColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 height: 1.5,
                               ),
                             ),
@@ -213,26 +213,26 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                               ),
                             ),
                             child: ExpansionTile(
-                              collapsedIconColor: FinderColors.primaryBlue,
-                              iconColor: FinderColors.primaryBlue,
+                              collapsedIconColor: Theme.of(context).colorScheme.primary,
+                              iconColor: Theme.of(context).colorScheme.primary,
                               leading: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: FinderColors.primaryBlue.withOpacity(0.1),
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
                                   section['icon'] as IconData,
-                                  color: FinderColors.primaryBlue,
+                                  color: Theme.of(context).colorScheme.primary,
                                   size: 20,
                                 ),
                               ),
                               title: Text(
                                 section['title'] as String,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: FinderColors.primaryBlue,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                               children: [
@@ -285,7 +285,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                         height: 24,
                         child: Checkbox(
                           value: _hasAccepted,
-                          activeColor: FinderColors.primaryBlue,
+                          activeColor: Theme.of(context).colorScheme.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -297,12 +297,12 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'I have read and agree to the Privacy Policy and Terms of Use',
                           style: TextStyle(
                             fontSize: 14,
-                            color: FinderColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -327,9 +327,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: FinderColors.primaryBlue,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         disabledBackgroundColor:
-                            FinderColors.primaryBlue.withOpacity(0.5),
+                            Theme.of(context).colorScheme.primary.withOpacity(0.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

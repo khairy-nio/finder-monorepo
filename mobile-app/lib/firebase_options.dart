@@ -3,8 +3,17 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
-// Generated file provides FirebaseOptions only.
 
+/// Default [FirebaseOptions] for use with your Firebase apps.
+///
+/// Example:
+/// ```dart
+/// import 'firebase_options.dart';
+/// // ...
+/// await Firebase.initializeApp(
+///   options: DefaultFirebaseOptions.currentPlatform,
+/// );
+/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -32,48 +41,50 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAqoU3saJoBHMKl7MsnZvzRL0yy4BDyZ3c',
-    appId: '1:591658447299:web:6ee9e11fb93977a6668d76',
-    messagingSenderId: '591658447299',
-    projectId: 'finder-app-14ea2',
-    authDomain: 'finder-app-14ea2.firebaseapp.com',
-    storageBucket: 'finder-app-14ea2.firebasestorage.app',
-    measurementId: 'G-V6QY6J2XL3',
+    apiKey: 'AIzaSyBc1NLahqWJ8glLgK9jGKfuvu90X562eiw',
+    appId: '1:445812609870:web:9271121e2736f520d2c41f',
+    messagingSenderId: '445812609870',
+    projectId: 'tenacious-veld-426502-c3',
+    authDomain: 'tenacious-veld-426502-c3.firebaseapp.com',
+    storageBucket: 'tenacious-veld-426502-c3.firebasestorage.app',
+    measurementId: 'G-SZEERM6277',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyChw-Bscy7px17AtvuQ2B47K-8lBgs0MZc',
-    appId: '1:591658447299:android:885f81b76b40912e668d76',
-    messagingSenderId: '591658447299',
-    projectId: 'finder-app-14ea2',
-    storageBucket: 'finder-app-14ea2.firebasestorage.app',
+    apiKey: 'AIzaSyCdT1wFs8mkLKbTQOZS7uFUc5nrH0TVcrA',
+    appId: '1:445812609870:android:d84da5994882ff97d2c41f',
+    messagingSenderId: '445812609870',
+    projectId: 'tenacious-veld-426502-c3',
+    storageBucket: 'tenacious-veld-426502-c3.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCnpgEXEJ8aBJSGVznQzk5WPfK2tcNbD10',
-    appId: '1:591658447299:ios:533cc66a043d0928668d76',
-    messagingSenderId: '591658447299',
-    projectId: 'finder-app-14ea2',
-    storageBucket: 'finder-app-14ea2.firebasestorage.app',
+    apiKey: 'AIzaSyDdxgibOVqTG862DJ1quLbyIqptidmOyjI',
+    appId: '1:445812609870:ios:b7e0ab849be0d15cd2c41f',
+    messagingSenderId: '445812609870',
+    projectId: 'tenacious-veld-426502-c3',
+    storageBucket: 'tenacious-veld-426502-c3.firebasestorage.app',
+    iosClientId: '445812609870-j5avdmiqpobg5i2n6kndvde4b50eim5e.apps.googleusercontent.com',
     iosBundleId: 'com.example.lost',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCnpgEXEJ8aBJSGVznQzk5WPfK2tcNbD10',
-    appId: '1:591658447299:ios:533cc66a043d0928668d76',
-    messagingSenderId: '591658447299',
-    projectId: 'finder-app-14ea2',
-    storageBucket: 'finder-app-14ea2.firebasestorage.app',
+    apiKey: 'AIzaSyDdxgibOVqTG862DJ1quLbyIqptidmOyjI',
+    appId: '1:445812609870:ios:b7e0ab849be0d15cd2c41f',
+    messagingSenderId: '445812609870',
+    projectId: 'tenacious-veld-426502-c3',
+    storageBucket: 'tenacious-veld-426502-c3.firebasestorage.app',
+    iosClientId: '445812609870-j5avdmiqpobg5i2n6kndvde4b50eim5e.apps.googleusercontent.com',
     iosBundleId: 'com.example.lost',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDZ7TADA-mPnZLTH3e-DTBZUqVUO-MqMm0',
-    appId: '1:591658447299:web:bd124a793e3cc3aa668d76',
-    messagingSenderId: '591658447299',
-    projectId: 'finder-app-14ea2',
-    authDomain: 'finder-app-14ea2.firebaseapp.com',
-    storageBucket: 'finder-app-14ea2.firebasestorage.app',
-    measurementId: 'G-K3ZG82EX71',
+    apiKey: 'AIzaSyBc1NLahqWJ8glLgK9jGKfuvu90X562eiw',
+    appId: '1:445812609870:web:10371ae00c5d71a9d2c41f',
+    messagingSenderId: '445812609870',
+    projectId: 'tenacious-veld-426502-c3',
+    authDomain: 'tenacious-veld-426502-c3.firebaseapp.com',
+    storageBucket: 'tenacious-veld-426502-c3.firebasestorage.app',
+    measurementId: 'G-HHXTN4Q8J3',
   );
 }

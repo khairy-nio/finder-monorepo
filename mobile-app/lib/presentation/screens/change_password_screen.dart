@@ -69,8 +69,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: Container(
-          decoration: const BoxDecoration(
-            color: FinderColors.primaryBlue,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(30),
               bottomRight: Radius.circular(30),
@@ -122,13 +122,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: FinderColors.primaryBlue.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.lock_outline,
                     size: 40,
-                    color: FinderColors.primaryBlue,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
 
@@ -446,7 +446,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             }
                           },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: FinderColors.primaryBlue,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

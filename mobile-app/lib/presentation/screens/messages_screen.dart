@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/socket_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/dynamic_colors.dart';
 import '../../data/datasources/chat_remote_data_source.dart';
 import '../providers/user_provider.dart';
+import '../widgets/app_bottom_nav.dart';
 import 'package:provider/provider.dart';
 
-/// Messages Screen - Chat List
+/// Messages Screen — polished chat list.
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
 
@@ -15,16 +19,35 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
-  bool _isLoading = true;
+  bool _isLoading  = true;
   bool _isSearching = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  // Each map holds: id, otherUserName, lastMessage, time, unreadCount, isOnline
   List<Map<String, dynamic>> _chats = [];
 
   final SocketService _socketService = SocketService();
   String _currentUserId = '';
   late final dynamic Function(dynamic) _eventHandler;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChats();
+    _eventHandler = (payload) {
+      if (!mounted) return;
+      if (payload['event_type'] == 'conversation.updated') {
+        final user = context.read<UserProvider>().backendUser;
+        if (user != null) _currentUserId = user.id;
+        _updateChatList({
+          'chat_id': payload['conversation']['id'],
+          'last_message': payload['data']['last_message'],
+          'last_message_sender_id': payload['data']['last_message_sender_id'],
+          'updated_at': payload['emitted_at'],
+        });
+      }
+    };
+    _initSocket();
+  }
 
   @override
   void dispose() {
@@ -34,90 +57,53 @@ class _MessagesScreenState extends State<MessagesScreen> {
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadChats();
-    _eventHandler = (payload) {
-      if (mounted) {
-        final eventType = payload['event_type'];
-        if (eventType == 'conversation.updated') {
-          final currentUser = context.read<UserProvider>().backendUser;
-          if (currentUser != null) {
-            _currentUserId = currentUser.id;
-          }
-          final data = payload['data'];
-          final conversation = payload['conversation'];
-          _updateChatList({
-            'chat_id': conversation['id'],
-            'last_message': data['last_message'],
-            'last_message_sender_id': data['last_message_sender_id'],
-            'updated_at': payload['emitted_at']
-          });
-        }
-      }
-    };
-    _initSocket();
-  }
-
   Future<void> _initSocket() async {
     final token = await AuthService.instance.getIdToken();
-    if (token != null) {
-      _socketService.setAuthToken(token);
-      _socketService.connect();
+    if (token == null) return;
+    _socketService.setAuthToken(token);
+    _socketService.connect();
 
-      final userProvider = context.read<UserProvider>();
-      if (userProvider.backendUser != null) {
-        _currentUserId = userProvider.backendUser!.id;
-      }
+    final up = context.read<UserProvider>();
+    if (up.backendUser != null) _currentUserId = up.backendUser!.id;
 
-      _socketService.onEvent(_eventHandler);
-
-      _socketService.on('chat_read', (data) {
-        if (mounted) {
-          final chatId = data['chat_id'] as String?;
-          if (chatId == null) return;
-          setState(() {
-            final index = _chats.indexWhere((c) => c['id'] == chatId);
-            if (index != -1) {
-              final chat = Map<String, dynamic>.from(_chats[index]);
-              chat['unread_count'] = 0;
-              _chats[index] = chat;
-            }
-          });
+    _socketService.onEvent(_eventHandler);
+    _socketService.on('chat_read', (data) {
+      if (!mounted) return;
+      final chatId = data['chat_id'] as String?;
+      if (chatId == null) return;
+      setState(() {
+        final idx = _chats.indexWhere((c) => c['id'] == chatId);
+        if (idx != -1) {
+          final chat = Map<String, dynamic>.from(_chats[idx]);
+          chat['unread_count'] = 0;
+          _chats[idx] = chat;
         }
       });
-    }
+    });
   }
 
-  void _updateChatList(dynamic data) {
+  void _updateChatList(Map<String, dynamic> data) {
     final chatId = data['chat_id'] as String?;
     if (chatId == null) return;
-
     setState(() {
-      final index = _chats.indexWhere((c) => c['id'] == chatId);
-      if (index != -1) {
-        final chat = Map<String, dynamic>.from(_chats[index]);
+      final idx = _chats.indexWhere((c) => c['id'] == chatId);
+      if (idx != -1) {
+        final chat = Map<String, dynamic>.from(_chats[idx]);
         final isYou = data['last_message_sender_id'] == _currentUserId;
-        final senderName = isYou ? 'You: ' : '${(chat['other_user_name'] as String?)?.split(' ').first ?? ''}: ';
-        final preview = '$senderName${data['last_message']}';
-
-        // Update fields
-        chat['last_message'] = preview;
+        final senderName = isYou
+            ? 'You: '
+            : '${(chat['other_user_name'] as String?)?.split(' ').first ?? ''}: ';
+        chat['last_message'] = '$senderName${data['last_message']}';
         chat['updated_at'] = data['updated_at'];
-        
-        // Unread logic: Only increment if someone else sent it AND we are not currently viewing the chat
         if (!isYou && _socketService.activeChatId != chatId) {
-          chat['unread_count'] = (int.tryParse(chat['unread_count']?.toString() ?? '0') ?? 0) + 1;
+          chat['unread_count'] =
+              (int.tryParse(chat['unread_count']?.toString() ?? '0') ?? 0) + 1;
         } else if (_socketService.activeChatId == chatId) {
-          chat['unread_count'] = 0; // Auto-mark read if we are looking at it
+          chat['unread_count'] = 0;
         }
-
-        // Move to top
-        _chats.removeAt(index);
+        _chats.removeAt(idx);
         _chats.insert(0, chat);
       } else {
-        // Completely new chat not in list yet, refetch securely
         _loadChats();
       }
     });
@@ -125,64 +111,77 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   Future<void> _loadChats() async {
     try {
-      final apiClient = ApiClient(
-        tokenProvider: AuthService.instance.getIdToken,
-      );
-      final dataSource = ChatRemoteDataSourceImpl(apiClient: apiClient);
-      final chats = await dataSource.getMyChats();
-      if (mounted) {
-        setState(() {
-          _chats = chats;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _chats = [];
-          _isLoading = false;
-        });
-      }
+      final ds = ChatRemoteDataSourceImpl(
+          apiClient: ApiClient(
+              tokenProvider: AuthService.instance.getIdToken));
+      final chats = await ds.getMyChats();
+      if (mounted) setState(() { _chats = chats; _isLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() { _chats = []; _isLoading = false; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final filtered = _chats.where((c) {
+      final name =
+          ((c['other_user_name'] ?? c['otherUserName']) as String?)
+                  ?.toLowerCase() ??
+              '';
+      final last =
+          ((c['last_message'] ?? c['lastMessage']) as String?)
+                  ?.toLowerCase() ??
+              '';
+      return name.contains(_searchQuery) || last.contains(_searchQuery);
+    }).toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black, size: 24),
-          onPressed: () => Navigator.pop(context),
-        ),
+        scrolledUnderElevation: 0,
+        leading: _isSearching
+            ? null
+            : IconButton(
+                icon: Icon(
+                  Icons.arrow_back_rounded,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
         title: _isSearching
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Search conversations...',
-                  border: InputBorder.none,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value.toLowerCase();
-                  });
-                },
+                decoration: InputDecoration(
+                  hintText: 'Search conversations…',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (v) =>
+                    setState(() => _searchQuery = v.toLowerCase()),
               )
-            : const Text(
+            : Text(
                 'Messages',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
         actions: [
           IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search, color: Colors.black, size: 24),
+            icon: Icon(
+              _isSearching ? Icons.close_rounded : Icons.search_rounded,
+              size: 22,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             onPressed: () {
               setState(() {
                 if (_isSearching) {
@@ -195,282 +194,320 @@ class _MessagesScreenState extends State<MessagesScreen> {
               });
             },
           ),
+          const SizedBox(width: 4),
         ],
       ),
-      body: Builder(builder: (context) {
-        if (_isLoading) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFF0A3D91)));
-        }
-
-        final filteredChats = _chats.where((chat) {
-          final name = (chat['otherUserName'] as String?)?.toLowerCase() ?? '';
-          final lastMessage = (chat['lastMessage'] as String?)?.toLowerCase() ?? '';
-          return name.contains(_searchQuery) || lastMessage.contains(_searchQuery);
-        }).toList();
-
-        if (filteredChats.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  _searchQuery.isEmpty ? 'No conversations yet' : 'No matches found',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 16),
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+          : filtered.isEmpty
+              ? _EmptyState(isSearching: _searchQuery.isNotEmpty)
+              : ListView.builder(
+                  itemCount: filtered.length,
+                  itemBuilder: (ctx, i) =>
+                      _ChatTile(chat: filtered[i]),
                 ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          itemCount: filteredChats.length,
-          itemBuilder: (context, index) {
-            final chat = filteredChats[index];
-            return _buildChatItem(context, chat);
-          },
-        );
-      }),
-      bottomNavigationBar: SizedBox(
-        height: 100,
-        child: Stack(
-          children: [
-            // Color bar positioned in the middle
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                height: 60,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0A3D91),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Icons positioned to overlap the bar
-            Positioned(
-              left: 0,
-              right: 0,
-              top: 10,
-              bottom: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildNavButton(Icons.home, false, () {
-                    Navigator.pushReplacementNamed(context, '/home');
-                  }),
-                  _buildNavButton(Icons.chat_bubble_outline, true, () {}),
-                  _buildNavButton(Icons.file_upload_outlined, false, () {
-                    Navigator.pushNamed(context, '/create-post');
-                  }),
-                  _buildNavButton(Icons.person, false, () {
-                    Navigator.pushNamed(context, '/profile');
-                  }),
-                ],
-              ),
-            ),
-          ],
-        ),
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: NavTab.messages,
+        onTap: (i) {
+          if (i == NavTab.messages) return;
+          AppBottomNav.navigateToTab(context, i);
+        },
       ),
     );
   }
+}
 
-  Widget _buildAvatar(String? imageUrl, {double size = 56, double iconSize = 28}) {
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      return Container(
-        width: size,
-        height: size,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-        ),
-        child: ClipOval(
-          child: Image.network(
-            imageUrl,
-            width: size,
-            height: size,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: Colors.grey[300],
-                child: Icon(Icons.person, size: iconSize, color: Colors.grey[700]),
-              );
-            },
-          ),
-        ),
-      );
-    }
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: Colors.grey[300],
-        shape: BoxShape.circle,
-      ),
-      child: Icon(Icons.person, size: iconSize, color: Colors.grey[700]),
-    );
-  }
+class _ChatTile extends StatelessWidget {
+  final Map<String, dynamic> chat;
 
-  Widget _buildChatItem(BuildContext context, Map<String, dynamic> chat) {
-    final chatId = chat['id'] as String? ?? '';
-    final otherUserId = chat['other_user_id'] as String? ?? '';
-    final otherUserName = chat['other_user_name'] as String? ?? 'Unknown';
-    final otherUserAvatar = chat['other_user_avatar'] as String?;
-    final lastMessage = chat['last_message'] as String? ?? '';
-    final time = chat['updated_at'] as String? ?? '';
-    final unreadCount = int.tryParse(chat['unread_count']?.toString() ?? '0') ?? 0;
-    final isOnline = (chat['is_online'] as bool?) ?? false;
-    final post = chat['post'] as Map<String, dynamic>?;
-    final postTitle = post?['title'] as String? ?? '';
+  const _ChatTile({required this.chat});
 
-    // Helper to format time strings (if it's a full ISO date, we want just the time or simple date)
+  @override
+  Widget build(BuildContext context) {
+    final chatId         = chat['id'] as String? ?? '';
+    final otherUserId    = chat['other_user_id'] as String? ?? '';
+    final otherUserName  = chat['other_user_name'] as String? ?? 'Unknown';
+    final otherAvatar    = chat['other_user_avatar'] as String?;
+    final lastMessage    = chat['last_message'] as String? ?? '';
+    final time           = chat['updated_at'] as String? ?? '';
+    final unread         =
+        int.tryParse(chat['unread_count']?.toString() ?? '0') ?? 0;
+    final isOnline       = (chat['is_online'] as bool?) ?? false;
+    final post           = chat['post'] as Map<String, dynamic>?;
+    final postTitle      = post?['title'] as String? ?? '';
+
+    // Format time
     String displayTime = time;
     try {
       if (time.length > 10) {
         final dt = DateTime.parse(time).toLocal();
-        displayTime = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+        final now = DateTime.now();
+        if (now.difference(dt).inDays == 0) {
+          displayTime =
+              '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+        } else if (now.difference(dt).inDays == 1) {
+          displayTime = 'Yesterday';
+        } else {
+          displayTime = '${dt.day}/${dt.month}';
+        }
       }
     } catch (_) {}
 
     return InkWell(
-      onTap: () {
-        Navigator.pushNamed(
-          context,
-          '/chat',
-          arguments: {
-            'chatId': chatId,
-            'userId': otherUserId,
-            'userName': otherUserName,
-            'isOnline': isOnline,
-            'postTitle': post?['title'],
-            'postImage': post?['image_url'],
-            'postStatus': post?['status'],
-            'postId': post?['id'],
-            'userAvatar': otherUserAvatar,
-          },
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 1)),
-        ),
-        child: Stack(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+      onTap: () => Navigator.pushNamed(
+        context,
+        '/chat',
+        arguments: {
+          'chatId': chatId,
+          'userId': otherUserId,
+          'userName': otherUserName,
+          'isOnline': isOnline,
+          'postTitle': post?['title'],
+          'postImage': post?['image_url'],
+          'postStatus': post?['status'],
+          'postId': post?['id'],
+          'userAvatar': otherAvatar,
+        },
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl2, vertical: 12),
+            child: Row(
               children: [
+                // Avatar
                 Stack(
                   children: [
-                    _buildAvatar(otherUserAvatar, size: 56, iconSize: 28),
+                    _Avatar(url: otherAvatar, name: otherUserName),
                     if (isOnline)
                       Positioned(
-                        bottom: 2,
-                        right: 2,
+                        bottom: 0,
+                        right: 0,
                         child: Container(
-                          width: 14,
-                          height: 14,
+                          width: 11,
+                          height: 11,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50),
+                            color: AppColors.success,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            border: Border.all(
+                                color: Theme.of(context).scaffoldBackgroundColor,
+                                width: 2),
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(width: 12),
+
+                const SizedBox(width: AppSpacing.md),
+
+                // Content
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 60.0), // space for time and unread
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          otherUserName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                        if (postTitle.isNotEmpty)
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              otherUserName,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: unread > 0
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                           Text(
-                            'Re: $postTitle',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 12, color: const Color(0xFF0A3D91), fontWeight: FontWeight.w500),
+                            displayTime,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: unread > 0
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: unread > 0
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
                           ),
-                        const SizedBox(height: 4),
+                        ],
+                      ),
+                      if (postTitle.isNotEmpty) ...[
+                        const SizedBox(height: 1),
                         Text(
-                          lastMessage,
+                          'Re: $postTitle',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: unreadCount > 0 ? Colors.black87 : Colors.grey[600],
-                            fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
-                          ),
                         ),
                       ],
-                    ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              lastMessage,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: unread > 0
+                                    ? Theme.of(context).colorScheme.onSurface
+                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontWeight: unread > 0
+                                    ? FontWeight.w500
+                                    : FontWeight.w400,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (unread > 0) ...[
+                            const SizedBox(width: AppSpacing.sm),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusFull),
+                              ),
+                              child: Text(
+                                '$unread',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            Positioned(
-              right: 0,
-              top: 0,
-              child: unreadCount > 0
-                  ? Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(color: Color(0xFF0A3D91), shape: BoxShape.circle),
-                      child: Text(
-                        '$unreadCount',
-                        style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Text(
-                displayTime,
-                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-              ),
-            ),
-          ],
-        ),
+          ),
+          const Divider(
+            height: 1,
+            indent: AppSpacing.xl2 + 52 + AppSpacing.md,
+            endIndent: 0,
+          ),
+        ],
       ),
-    );  }
+    );
+  }
+}
 
-  Widget _buildNavButton(IconData icon, bool isActive, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
-          shape: BoxShape.circle,
+class _Avatar extends StatelessWidget {
+  final String? url;
+  final String name;
+
+  const _Avatar({required this.url, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    if (url != null && url!.isNotEmpty) {
+      return Container(
+        width: 52,
+        height: 52,
+        decoration: const BoxDecoration(shape: BoxShape.circle),
+        child: ClipOval(
+          child: Image.network(
+            url!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _initials(context),
+          ),
         ),
-        child: Icon(
-          icon,
-          color: isActive ? const Color(0xFF0A3D91) : Colors.white,
-          size: 38,
+      );
+    }
+    return _initials(context);
+  }
+
+  Widget _initials(BuildContext context) {
+    final initial =
+        name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       ),
     );
   }
 }
 
+class _EmptyState extends StatelessWidget {
+  final bool isSearching;
+
+  const _EmptyState({required this.isSearching});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl3),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: context.colors.neutral100,
+                borderRadius:
+                    BorderRadius.circular(AppSpacing.radiusXl),
+              ),
+              child: Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 32,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              isSearching ? 'No results found' : 'No conversations yet',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              isSearching
+                  ? 'Try a different search term.'
+                  : 'When you contact someone about a lost item,\nyour conversation will appear here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

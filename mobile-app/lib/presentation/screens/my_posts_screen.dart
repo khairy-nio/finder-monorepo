@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/dynamic_colors.dart';
 import '../../core/utils/app_messenger.dart';
 import '../../data/datasources/post_remote_data_source.dart';
 import '../../domain/entities/post.dart';
+import '../widgets/app_bottom_nav.dart';
 
-/// My Posts Screen
 class MyPostsScreen extends StatefulWidget {
   const MyPostsScreen({super.key});
 
@@ -19,10 +22,10 @@ class _MyPostsScreenState extends State<MyPostsScreen>
   final TextEditingController _searchController = TextEditingController();
   List<Post> _allUserPosts = [];
   bool _isLoading = true;
-
-  late final PostRemoteDataSourceImpl _dataSource;
+  String? _error;
   String _searchQuery = '';
   final Set<String> _updatingPosts = {};
+  late final PostRemoteDataSourceImpl _dataSource;
 
   @override
   void initState() {
@@ -31,34 +34,9 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     _dataSource = PostRemoteDataSourceImpl(
       apiClient: ApiClient(tokenProvider: AuthService.instance.getIdToken),
     );
-    _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text.toLowerCase());
-    });
+    _searchController.addListener(
+        () => setState(() => _searchQuery = _searchController.text.toLowerCase()));
     _loadUserPosts();
-  }
-
-  String? _error;
-
-  Future<void> _loadUserPosts() async {
-    try {
-      final posts = await _dataSource.getUserPosts('');
-      if (mounted) {
-        setState(() {
-          // Enforce domain boundary: convert List<PostModel> to List<Post>
-          _allUserPosts = List<Post>.from(posts);
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Unable to load posts right now.';
-          _allUserPosts = [];
-          _isLoading = false;
-        });
-        AppMessenger.showError('Unable to load posts. Please try again.');
-      }
-    }
   }
 
   @override
@@ -68,93 +46,107 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     super.dispose();
   }
 
+  Future<void> _loadUserPosts() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final posts = await _dataSource.getUserPosts('');
+      if (mounted) setState(() { _allUserPosts = List<Post>.from(posts); _isLoading = false; });
+    } catch (e) {
+      if (mounted) {
+        setState(() { _error = 'Unable to load posts right now.'; _isLoading = false; });
+        AppMessenger.showError('Unable to load posts. Please try again.');
+      }
+    }
+  }
+
   Future<void> _toggleResolved(String postId, String currentStatus) async {
     if (_updatingPosts.contains(postId)) return;
-
     final isResolved = currentStatus == 'resolved' || currentStatus == 'closed';
     final newStatus = isResolved ? 'active' : 'resolved';
     final idx = _allUserPosts.indexWhere((p) => p.id == postId);
     if (idx == -1) return;
-
     final previousPost = _allUserPosts[idx];
 
-    if (mounted) {
-      setState(() {
-        _updatingPosts.add(postId);
-        final newList = List<Post>.from(_allUserPosts);
-        newList[idx] = previousPost.copyWith(status: newStatus);
-        _allUserPosts = newList;
-      });
-    }
+    setState(() {
+      _updatingPosts.add(postId);
+      final newList = List<Post>.from(_allUserPosts);
+      newList[idx] = previousPost.copyWith(status: newStatus);
+      _allUserPosts = newList;
+    });
 
     try {
       await _dataSource.updatePostStatus(postId, newStatus);
       AppMessenger.showSuccess(
-        newStatus == 'resolved'
-            ? 'Post marked as resolved'
-            : 'Post restored to active',
-      );
+          newStatus == 'resolved' ? 'Post marked as resolved' : 'Post restored to active');
     } catch (e) {
       if (mounted) {
         setState(() {
-          final rollbackList = List<Post>.from(_allUserPosts);
-          final rollbackIdx = rollbackList.indexWhere((p) => p.id == postId);
-          if (rollbackIdx != -1) {
-            rollbackList[rollbackIdx] = previousPost;
-            _allUserPosts = rollbackList;
-          }
+          final rb = List<Post>.from(_allUserPosts);
+          final ri = rb.indexWhere((p) => p.id == postId);
+          if (ri != -1) { rb[ri] = previousPost; _allUserPosts = rb; }
         });
       }
       AppMessenger.showError('Could not update post status. Please try again.');
     } finally {
-      if (mounted) {
-        setState(() {
-          _updatingPosts.remove(postId);
-        });
-      }
+      if (mounted) setState(() => _updatingPosts.remove(postId));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0A3D91),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: context.colors.neutral100,
+              borderRadius: AppSpacing.brSm,
             ),
+            child: Icon(Icons.arrow_back_rounded, size: 18, color: Theme.of(context).colorScheme.onSurface),
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'My Shared Posts',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(width: 48), // balance the back button
-                ],
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'My Posts',
+          style: TextStyle(
+              fontSize: 17, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add_rounded, size: 22, color: Theme.of(context).colorScheme.primary),
+            onPressed: () => Navigator.pushNamed(context, '/create-post'),
+          ),
+          const SizedBox(width: 4),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl2, 0, AppSpacing.xl2, AppSpacing.sm),
+            child: Container(
+              decoration: BoxDecoration(
+                color: context.colors.neutral100,
+                borderRadius: AppSpacing.brMd,
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: AppSpacing.brMd,
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelColor: AppColors.white,
+                unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                labelStyle: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600),
+                dividerColor: Colors.transparent,
+                tabs: const [Tab(text: 'Lost'), Tab(text: 'Found')],
               ),
             ),
           ),
@@ -162,526 +154,502 @@ class _MyPostsScreenState extends State<MyPostsScreen>
       ),
       body: Column(
         children: [
-          const SizedBox(height: 16),
-
-          // Search Bar
+          // Search bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search my posts...',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl2, AppSpacing.md, AppSpacing.xl2, AppSpacing.xs),
+            child: TextField(
+              controller: _searchController,
+              style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
+              decoration: InputDecoration(
+                hintText: 'Search my posts…',
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                prefixIcon: Icon(Icons.search_rounded,
+                    size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                border: OutlineInputBorder(
+                  borderRadius: AppSpacing.brMd,
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: AppSpacing.brMd,
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: AppSpacing.brMd,
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+                ),
+                filled: true,
+                fillColor: Theme.of(context).scaffoldBackgroundColor,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: 12),
               ),
             ),
           ),
 
-          const SizedBox(height: 20),
-
-          // Tabs
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: const Color(0xFF0A3D91),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.grey[600],
-              labelStyle: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-              tabs: const [
-                Tab(text: 'Lost'),
-                Tab(text: 'Found'),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Posts List
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [_buildPostsList('lost'), _buildPostsList('found')],
-            ),
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+                : _error != null
+                    ? _ErrorState(message: _error!, onRetry: _loadUserPosts)
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _PostsList(
+                            posts: _allUserPosts,
+                            type: 'lost',
+                            searchQuery: _searchQuery,
+                            updatingPosts: _updatingPosts,
+                            onToggleResolved: _toggleResolved,
+                          ),
+                          _PostsList(
+                            posts: _allUserPosts,
+                            type: 'found',
+                            searchQuery: _searchQuery,
+                            updatingPosts: _updatingPosts,
+                            onToggleResolved: _toggleResolved,
+                          ),
+                        ],
+                      ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/create-post');
+      bottomNavigationBar: AppBottomNav(
+        currentIndex: NavTab.profile,
+        onTap: (i) {
+          if (i == NavTab.profile) return;
+          AppBottomNav.navigateToTab(context, i);
         },
-        backgroundColor: const Color(0xFF0A3D91),
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
       ),
-      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
+}
 
-  Widget _buildPostsList(String type) {
-    if (_isLoading)
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF0A3D91)),
-      );
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            'Error: $_error',
-            style: const TextStyle(color: Colors.red),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-    final posts = _allUserPosts
+// ─── Sub-widgets ──────────────────────────────────────────────────────────────
+
+class _PostsList extends StatelessWidget {
+  final List<Post> posts;
+  final String type;
+  final String searchQuery;
+  final Set<String> updatingPosts;
+  final Future<void> Function(String, String) onToggleResolved;
+
+  const _PostsList({
+    required this.posts,
+    required this.type,
+    required this.searchQuery,
+    required this.updatingPosts,
+    required this.onToggleResolved,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = posts
         .where((p) => p.postType == type)
-        .where(
-          (p) =>
-              _searchQuery.isEmpty ||
-              p.title.toLowerCase().contains(_searchQuery),
-        )
+        .where((p) =>
+            searchQuery.isEmpty ||
+            p.title.toLowerCase().contains(searchQuery))
         .toList();
-        
-    final totalOtherPosts = _allUserPosts.where((p) => p.postType != type).length;
-    
-    if (posts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isEmpty
-                  ? 'No ${type == 'lost' ? 'lost' : 'found'} posts yet'
-                  : 'No results for "$_searchQuery"',
-              style: TextStyle(color: Colors.grey[600], fontSize: 16),
-            ),
-            if (_searchQuery.isEmpty && totalOtherPosts > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  '(You have $totalOtherPosts ${type == 'lost' ? 'found' : 'lost'} post(s) on the other tab)',
-                  style: const TextStyle(color: Color(0xFF0A3D91), fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-              ),
-          ],
-        ),
-      );
+
+    if (filtered.isEmpty) {
+      return _EmptyState(type: type, isSearching: searchQuery.isNotEmpty);
     }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: posts.length,
-      itemBuilder: (context, index) {
-        final post = posts[index];
-        return _buildPostCardFromEntity(post);
-      },
+
+    return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
+      onRefresh: () async {},
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl2, AppSpacing.md, AppSpacing.xl2, AppSpacing.xl4),
+        itemCount: filtered.length,
+        itemBuilder: (context, i) => _PostCard(
+          post: filtered[i],
+          isUpdating: updatingPosts.contains(filtered[i].id),
+          onToggleResolved: onToggleResolved,
+        ),
+      ),
     );
   }
+}
 
-  Widget _buildPostCardFromEntity(Post post) {
-    final bool isResolved =
-        post.status == 'resolved' || post.status == 'closed';
-    final bool isUpdating = _updatingPosts.contains(post.id);
-    final bool isHidden = post.moderationStatus == 'hidden';
-    final bool isRemoved = post.moderationStatus == 'removed';
-    final bool isBlocked = isHidden || isRemoved;
+class _PostCard extends StatelessWidget {
+  final Post post;
+  final bool isUpdating;
+  final Future<void> Function(String, String) onToggleResolved;
+
+  const _PostCard({
+    required this.post,
+    required this.isUpdating,
+    required this.onToggleResolved,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isResolved = post.status == 'resolved' || post.status == 'closed';
+    final isHidden = post.moderationStatus == 'hidden';
+    final isRemoved = post.moderationStatus == 'removed';
+    final isBlocked = isHidden || isRemoved;
 
     return Container(
       key: ValueKey('${post.id}_${post.status}_${post.moderationStatus}'),
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: isBlocked ? Colors.grey[50] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: isBlocked ? context.colors.neutral50 : Theme.of(context).colorScheme.surface,
+        borderRadius: AppSpacing.brLg,
         border: Border.all(
-          color: isBlocked ? Colors.red[200]! : Colors.grey[200]!,
-          width: 1,
+          color: isBlocked ? AppColors.error.withOpacity(0.2) : Theme.of(context).colorScheme.outline,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppShadows.sm,
       ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: ColorFiltered(
-                      colorFilter: ColorFilter.mode(
-                        isBlocked ? Colors.grey : Colors.transparent,
-                        BlendMode.saturation,
-                      ),
-                      child: Image.network(
-                        post.imageUrl,
-                        width: 70,
-                        height: 70,
-                        fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.image, color: Colors.grey),
-                        ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image
+                ClipRRect(
+                  borderRadius: AppSpacing.brMd,
+                  child: ColorFiltered(
+                    colorFilter: ColorFilter.mode(
+                      isBlocked ? Colors.grey : Colors.transparent,
+                      BlendMode.saturation,
+                    ),
+                    child: Image.network(
+                      post.imageUrl,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 72,
+                        height: 72,
+                        color: context.colors.neutral100,
+                        child: Icon(Icons.image_outlined,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                     ),
                   ),
-                  if (isBlocked)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.visibility_off_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
+                ),
+
+                const SizedBox(width: AppSpacing.md),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Status badges row
+                      Row(
+                        children: [
+                          _StatusBadge(
+                            label: isResolved ? 'Resolved' : 'Active',
                             color: isResolved
-                                ? Colors.grey[300]
-                                : const Color(0xFF0A3D91).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                : AppColors.success,
+                            bgColor: isResolved
+                                ? context.colors.neutral100
+                                : context.colors.successMuted,
                           ),
-                          child: Text(
-                            isResolved ? 'RESOLVED' : 'ACTIVE',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: isResolved
-                                  ? Colors.grey[700]
-                                  : const Color(0xFF0A3D91),
-                              letterSpacing: 0.5,
+                          if (isBlocked) ...[
+                            const SizedBox(width: AppSpacing.xs),
+                            _StatusBadge(
+                              label: isHidden ? 'Hidden' : 'Removed',
+                              color: AppColors.error,
+                              bgColor: AppColors.errorMuted,
                             ),
-                          ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        post.title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isBlocked
+                              ? Theme.of(context).colorScheme.onSurfaceVariant
+                              : Theme.of(context).colorScheme.onSurface,
+                          decoration: isRemoved ? TextDecoration.lineThrough : null,
                         ),
-                        if (isBlocked) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.red[50],
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: Colors.red[100]!),
-                            ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (isBlocked) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          isHidden
+                              ? 'Hidden by moderator for review.'
+                              : 'Removed for policy violation.',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.error.withOpacity(0.8),
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_outlined,
+                              size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 3),
+                          Expanded(
                             child: Text(
-                              isHidden ? 'HIDDEN' : 'REMOVED',
+                              '${post.city ?? ''}, ${post.country}',
                               style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.red[700],
-                                letterSpacing: 0.5,
-                              ),
+                                  fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      post.title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isBlocked ? Colors.grey[700] : Colors.black,
-                        decoration: isRemoved ? TextDecoration.lineThrough : null,
                       ),
-                    ),
-                    if (isBlocked)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          isHidden 
-                            ? 'Hidden by moderator for review.'
-                            : 'Removed by moderator for violation.',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.red[400],
-                            fontWeight: FontWeight.w600,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 14,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            '${post.city ?? ''}, ${post.country}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (isBlocked)
-             Container(
-               width: double.infinity,
-               padding: const EdgeInsets.symmetric(vertical: 10),
-               decoration: BoxDecoration(
-                 color: Colors.red[50]?.withOpacity(0.5),
-                 borderRadius: BorderRadius.circular(8),
-               ),
-               child: Center(
-                 child: Text(
-                   'Moderation actions cannot be overridden.',
-                   style: TextStyle(
-                     color: Colors.red[700],
-                     fontSize: 12,
-                     fontWeight: FontWeight.bold,
-                   ),
-                 ),
-               ),
-             )
-          else if (isResolved)
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: isUpdating ? null : () => _toggleResolved(post.id, post.status),
-                    icon: isUpdating 
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.undo, size: 18),
-                    label: const Text('Undo Resolved'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.grey[700],
-                      side: BorderSide(color: Colors.grey[400]!),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
+                    ],
                   ),
                 ),
               ],
-            )
-          else
-            Row(
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(
+            ),
+
+            const SizedBox(height: AppSpacing.md),
+
+            // Action row
+            if (isBlocked)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.errorMuted,
+                  borderRadius: AppSpacing.brSm,
+                ),
+                child: const Text(
+                  'Moderation actions cannot be overridden.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w600),
+                ),
+              )
+            else if (isResolved)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed:
+                      isUpdating ? null : () => onToggleResolved(post.id, post.status),
+                  icon: isUpdating
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Theme.of(context).colorScheme.onSurfaceVariant))
+                      : const Icon(Icons.undo_rounded, size: 16),
+                  label: const Text('Undo Resolved'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: AppSpacing.brSm),
+                  ),
+                ),
+              )
+            else
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.pushNamed(
                       context,
                       '/create-post',
                       arguments: {'editPost': post},
-                    );
-                  },
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Edit'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    side: BorderSide(color: Colors.grey[400]!),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Edit'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                      side: BorderSide(color: Theme.of(context).colorScheme.outline),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: AppSpacing.brSm),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-
-                // ── Verification Questions Button ──────────────────────────
-                Tooltip(
-                  message: 'Set Verification Questions',
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
+                  const SizedBox(width: AppSpacing.sm),
+                  Tooltip(
+                    message: 'Verification Questions',
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pushNamed(
                         context,
                         '/post-questions',
-                        arguments: {
-                          'postId': post.id,
-                          'postTitle': post.title,
-                        },
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0A3D91),
-                      side: const BorderSide(color: Color(0xFF0A3D91)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        arguments: {'postId': post.id, 'postTitle': post.title},
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.primary,
+                        side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.brSm),
                       ),
-                    ),
-                    child: const Icon(Icons.quiz_rounded, size: 18),
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: isUpdating ? null : () => _toggleResolved(post.id, post.status),
-                    icon: isUpdating 
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.check_circle_outline, size: 18),
-                    label: const Text('Mark Resolved'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0A3D91),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: const Icon(Icons.quiz_rounded, size: 16),
                     ),
                   ),
-                ),
-              ],
-            ),
-
-        ],
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: isUpdating
+                          ? null
+                          : () => onToggleResolved(post.id, post.status),
+                      icon: isUpdating
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AppColors.white))
+                          : const Icon(Icons.check_circle_outline_rounded,
+                              size: 16),
+                      label: const Text('Resolved'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: AppColors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.brSm),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildBottomNavigation() {
-    return Stack(
-      children: [
-        Container(
-          height: 100,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -5),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-              Container(
-                height: 60,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0A3D91),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          top: 10,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavButton(Icons.home, false, () {
-                Navigator.pushReplacementNamed(context, '/home');
-              }),
-              _buildNavButton(Icons.chat_bubble_outline_sharp, false, () {
-                Navigator.pushNamed(context, '/messages');
-              }),
-              _buildNavButton(Icons.grid_view, true, () {}),
-              _buildNavButton(Icons.person, false, () {
-                Navigator.pushReplacementNamed(context, '/profile');
-              }),
-            ],
-          ),
-        ),
-      ],
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  final Color bgColor;
+
+  const _StatusBadge(
+      {required this.label, required this.color, required this.bgColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: 0.6),
+      ),
     );
   }
+}
 
-  Widget _buildNavButton(IconData icon, bool isActive, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF0A3D91) : Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+class _EmptyState extends StatelessWidget {
+  final String type;
+  final bool isSearching;
+
+  const _EmptyState({required this.type, required this.isSearching});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl3),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: context.colors.neutral100,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+              ),
+              child: Icon(Icons.inbox_outlined,
+                  size: 32, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              isSearching
+                  ? 'No results found'
+                  : 'No ${type == 'lost' ? 'lost' : 'found'} posts yet',
+              style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              isSearching
+                  ? 'Try a different search term.'
+                  : 'Posts you share will appear here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant, height: 1.5),
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: isActive ? Colors.white : Colors.grey[600],
-          size: 38,
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorState({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl3),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: context.colors.neutral100,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              ),
+              child: Icon(Icons.wifi_off_rounded,
+                  size: 30, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Could not load posts',
+              style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: AppSpacing.xl2),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Try again'),
+              style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(140, 46)),
+            ),
+          ],
         ),
       ),
     );

@@ -1,38 +1,30 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/finder_colors.dart';
+import '../../core/theme/app_spacing.dart';
 
-/// Custom Divider with Text - Reusable component
+/// Divider with centered label — used in auth screens.
 class CustomDivider extends StatelessWidget {
   final String text;
 
-  const CustomDivider({super.key, this.text = 'or'});
+  const CustomDivider({super.key, this.text = 'or continue with email'});
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.outlineVariant;
     return Row(
       children: [
-        Expanded(
-          child: Divider(
-            color: FinderColors.textSecondary.withOpacity(0.3),
-            thickness: 1,
-          ),
-        ),
+        Expanded(child: Divider(color: color, thickness: 1)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 14,
-              color: FinderColors.textSecondary.withOpacity(0.7),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
-        Expanded(
-          child: Divider(
-            color: FinderColors.textSecondary.withOpacity(0.3),
-            thickness: 1,
-          ),
-        ),
+        Expanded(child: Divider(color: color, thickness: 1)),
       ],
     );
   }

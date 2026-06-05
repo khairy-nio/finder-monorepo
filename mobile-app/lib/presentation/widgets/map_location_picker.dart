@@ -129,9 +129,9 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FinderColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: FinderColors.primaryBrown,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -148,9 +148,9 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
         centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
-                color: FinderColors.primaryBrown,
+                color: Theme.of(context).colorScheme.primary,
               ),
             )
           : Stack(
@@ -206,9 +206,9 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on,
-                          color: FinderColors.primaryBrown,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -217,8 +217,8 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                             _selectedAddress.isEmpty
                                 ? 'Tap on map to select location'
                                 : _selectedAddress,
-                            style: const TextStyle(
-                              color: FinderColors.textPrimary,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -237,9 +237,9 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                     mini: true,
                     backgroundColor: Colors.white,
                     onPressed: _goToCurrentLocation,
-                    child: const Icon(
+                    child: Icon(
                       Icons.my_location,
-                      color: FinderColors.primaryBrown,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
@@ -254,8 +254,8 @@ class _MapLocationPickerState extends State<MapLocationPicker> {
                         ? _confirmLocation
                         : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: FinderColors.primaryBrown,
-                      disabledBackgroundColor: FinderColors.textSecondary,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      disabledBackgroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

@@ -17,6 +17,7 @@ import 'presentation/providers/post_provider.dart';
 import 'presentation/providers/search_provider.dart';
 import 'presentation/providers/user_provider.dart';
 import 'presentation/providers/notification_provider.dart';
+import 'presentation/providers/theme_provider.dart';
 import 'routes/app_routes.dart';
 
 Future<void> main() async {
@@ -66,15 +67,21 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => NotificationProvider()..init(),
         ),
+        // Theme Provider — persists light/dark/system preference
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: AppStrings.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        navigatorKey: AppMessenger.navigatorKey,
-        scaffoldMessengerKey: AppMessenger.messengerKey,
-        initialRoute: AppRoutes.splash,
-        onGenerateRoute: AppRoutes.onGenerateRoute,
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) => MaterialApp(
+          title: AppStrings.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.mode,
+          navigatorKey: AppMessenger.navigatorKey,
+          scaffoldMessengerKey: AppMessenger.messengerKey,
+          initialRoute: AppRoutes.splash,
+          onGenerateRoute: AppRoutes.onGenerateRoute,
+        ),
       ),
     );
   }

@@ -119,7 +119,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: FinderColors.primaryBlue,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -182,7 +182,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
     return Container(
       height: 100,
       decoration: BoxDecoration(
-        color: FinderColors.primaryBlue,
+        color: Theme.of(context).colorScheme.primary,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(30),
           topRight: Radius.circular(30),
@@ -218,7 +218,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
         ),
         child: Icon(
           icon,
-          color: isActive ? FinderColors.primaryBlue : Colors.white,
+          color: isActive ? Theme.of(context).colorScheme.primary : Colors.white,
           size: 28,
         ),
       ),

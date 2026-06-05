@@ -16,7 +16,10 @@ class ClaimRequestModal extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ClaimRequestModal(postId: postId, receiverId: receiverId, onRequestSent: onRequestSent),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: ClaimRequestModal(postId: postId, receiverId: receiverId, onRequestSent: onRequestSent),
+      ),
     );
   }
 

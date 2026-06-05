@@ -312,7 +312,7 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FinderColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(child: _buildContent()),
     );
   }
@@ -411,10 +411,10 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                     },
                   ),
                   const SizedBox(height: 40),
-                  const Text(
+                  Text(
                     'Searching for matches...',
                     style: TextStyle(
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),
@@ -426,7 +426,7 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                       'Our AI is currently analyzing colors, shapes, and unique features to find potential matches in our database.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 14,
                         height: 1.5,
                       ),
@@ -547,8 +547,8 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                 Center(
                   child: Text(
                     '${_results.length} Matches Found',
-                    style: const TextStyle(
-                      color: Colors.black87,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
                     ),
@@ -563,7 +563,10 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                     child: Text(
                       'Based on visual similarity and location.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -595,10 +598,10 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      const Text(
+                      Text(
                         'None of these look like your item?',
                         style: TextStyle(
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -651,9 +654,9 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF0A3D91)),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.6)),
       ),
       child: Column(
         children: [
@@ -667,7 +670,7 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                 child: Container(
                   height: 200,
                   width: double.infinity,
-                  color: FinderColors.lightBrown,
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   child: BlurredProtectedImage(
                     imageUrl: result.imageUrl,
                     height: 200,
@@ -740,8 +743,8 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
               children: [
                 Text(
                   result.title,
-                  style: const TextStyle(
-                    color: FinderColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -749,8 +752,8 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                 const SizedBox(height: 8),
                 Text(
                   result.description,
-                  style: const TextStyle(
-                    color: FinderColors.textSecondary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 14,
                   ),
                   maxLines: 2,
@@ -764,11 +767,11 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                   decoration: BoxDecoration(
                     border: Border(
                       top: BorderSide(
-                        color: FinderColors.lightBrown,
+                        color: Theme.of(context).colorScheme.primaryContainer,
                         width: 0.5,
                       ),
                       bottom: BorderSide(
-                        color: FinderColors.lightBrown,
+                        color: Theme.of(context).colorScheme.primaryContainer,
                         width: 0.5,
                       ),
                     ),
@@ -785,16 +788,16 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.verified,
                               size: 18,
-                              color: FinderColors.primaryBrown,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Verified Finder (${result.finderName})',
-                              style: const TextStyle(
-                                color: FinderColors.primaryBrown,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -814,16 +817,16 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                       child: OutlinedButton(
                         onPressed: () => _navigateToPostDetail(result),
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: FinderColors.lightBrown),
+                          side: BorderSide(color: Theme.of(context).colorScheme.primaryContainer),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Text(
+                        child: Text(
                           'View Details',
                           style: TextStyle(
-                            color: FinderColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -834,7 +837,7 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                       child: ElevatedButton(
                         onPressed: () => _sendContactRequest(result),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: FinderColors.primaryBrown,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -875,9 +878,9 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF0A3D91)),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.6)),
       ),
       child: Column(
         children: [
@@ -891,7 +894,7 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                 child: Container(
                   height: 180,
                   width: double.infinity,
-                  color: FinderColors.lightBrown,
+                  color: Theme.of(context).colorScheme.primaryContainer,
                   child: BlurredProtectedImage(
                     imageUrl: result.imageUrl,
                     height: 180,
@@ -954,8 +957,8 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
               children: [
                 Text(
                   result.title,
-                  style: const TextStyle(
-                    color: FinderColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -963,8 +966,8 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                 const SizedBox(height: 4),
                 Text(
                   result.description,
-                  style: const TextStyle(
-                    color: FinderColors.textSecondary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 14,
                   ),
                   maxLines: 1,
@@ -975,16 +978,16 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                 // Quick info
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.location_on,
                       size: 16,
-                      color: FinderColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       result.location,
-                      style: const TextStyle(
-                        color: FinderColors.textSecondary,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
@@ -1019,10 +1022,10 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Text(
+                        child: Text(
                           'View Details',
                           style: TextStyle(
-                            color: FinderColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1087,7 +1090,7 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
             child: Container(
               width: 96,
               height: 96,
-              color: FinderColors.lightBrown,
+              color: Theme.of(context).colorScheme.primaryContainer,
               child: BlurredProtectedImage(
                 imageUrl: result.imageUrl,
                 height: 96,
@@ -1108,8 +1111,8 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                     Expanded(
                       child: Text(
                         result.title,
-                        style: const TextStyle(
-                          color: FinderColors.textPrimary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1127,8 +1130,8 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                       ),
                       child: Text(
                         '${result.matchPercentage}%',
-                        style: const TextStyle(
-                          color: FinderColors.textSecondary,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1139,8 +1142,8 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                 const SizedBox(height: 4),
                 Text(
                   result.description,
-                  style: const TextStyle(
-                    color: FinderColors.textSecondary,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 12,
                   ),
                   maxLines: 1,
@@ -1149,27 +1152,27 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.location_on,
                       size: 14,
-                      color: FinderColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       result.location,
-                      style: const TextStyle(
-                        color: FinderColors.textSecondary,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
-                    const Text(
+                    Text(
                       ' • ',
-                      style: TextStyle(color: FinderColors.textSecondary),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                     Text(
                       result.timeAgo,
-                      style: const TextStyle(
-                        color: FinderColors.textSecondary,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                     ),
@@ -1204,7 +1207,7 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
                       child: ElevatedButton(
                         onPressed: () => _sendContactRequest(result),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: FinderColors.primaryBrown,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -1234,12 +1237,12 @@ class _AIMatchingResultsScreenState extends State<AIMatchingResultsScreen>
   Widget _buildInfoRow(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: FinderColors.textSecondary),
+        Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
         Text(
           text,
-          style: const TextStyle(
-            color: FinderColors.textSecondary,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 14,
           ),
         ),

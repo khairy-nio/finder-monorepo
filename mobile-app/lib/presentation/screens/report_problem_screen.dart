@@ -1,3 +1,4 @@
+import '../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/user_provider.dart';
@@ -158,8 +159,8 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0A3D91),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(40),
               bottomRight: Radius.circular(40),
@@ -269,11 +270,11 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                     const SizedBox(height: 24),
 
                     // Title field
-                    const Text(
+                    Text(
                       'Title',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF0A3D91),
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -295,8 +296,8 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF0A3D91),
+                          borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
                             width: 2,
                           ),
                         ),
@@ -316,11 +317,11 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                     const SizedBox(height: 24),
 
                     // Description field
-                    const Text(
+                    Text(
                       'Description',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF0A3D91),
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -343,8 +344,8 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF0A3D91),
+                          borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
                             width: 2,
                           ),
                         ),
@@ -367,12 +368,12 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _submitReport,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0A3D91),
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           elevation: 0,
-                          disabledBackgroundColor: const Color(0xFF0A3D91).withOpacity(0.5),
+                          disabledBackgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.5),
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -410,13 +411,13 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF0A3D91).withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.gpp_maybe,
                 size: 80,
-                color: Color(0xFF0A3D91),
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 32),
@@ -448,7 +449,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                   Navigator.pushReplacementNamed(context, '/kyc-verification');
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0A3D91),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

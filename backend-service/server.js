@@ -14,28 +14,11 @@ const server = http.createServer(app);
 const port = process.env.PORT || 3500;
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-const ADMIN_DASHBOARD_ORIGIN = 'https://finder-admin-dashboard.vercel.app';
-
-const allowedOrigins = [
-    ADMIN_DASHBOARD_ORIGIN,
-    'http://localhost:8080', // Allow local Flutter web development
-    ...(process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
-        .split(',')
-        .map((o) => o.trim())
-        .filter(Boolean),
-];
-const uniqueOrigins = [...new Set(allowedOrigins)];
-const allowAllOrigins = uniqueOrigins.length <= 1 && process.env.NODE_ENV !== 'production';
-
 app.use(cors({
-    origin: (origin, callback) => {
-        if (allowAllOrigins || !origin) return callback(null, true);
-        if (uniqueOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error('Not allowed by CORS'));
-    },
+    origin: true,
     credentials: true,
-    allowedHeaders: ['Authorization', 'Content-Type'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // ─── Core middleware ───────────────────────────────────────────────────────────
@@ -45,7 +28,7 @@ app.use(logger('dev'));
 // ─── Socket.io ────────────────────────────────────────────────────────────────
 const io = new Server(server, {
     cors: {
-        origin: allowAllOrigins ? true : allowedOrigins,
+        origin: true,
         credentials: true
     }
 });

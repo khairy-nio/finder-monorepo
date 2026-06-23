@@ -18,6 +18,7 @@ const ADMIN_DASHBOARD_ORIGIN = 'https://finder-admin-dashboard.vercel.app';
 
 const allowedOrigins = [
     ADMIN_DASHBOARD_ORIGIN,
+    'http://localhost:8080', // Allow local Flutter web development
     ...(process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
         .split(',')
         .map((o) => o.trim())

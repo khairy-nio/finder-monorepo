@@ -58,3 +58,5 @@ build/
 .cache/
 tmp/
 temp/
+
+backend-service/config/*.json

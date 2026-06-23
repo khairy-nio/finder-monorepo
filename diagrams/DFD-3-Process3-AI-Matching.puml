@@ -1,0 +1,35 @@
+@startuml DFD-3-Process3-AI-Matching
+title Level 2 — Process 3.0: AI Matching Process
+
+skinparam backgroundColor white
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam arrowFontSize 10
+skinparam arrowThickness 1.2
+skinparam rectangle { BorderColor black }
+skinparam database  { BorderColor black }
+
+left to right direction
+
+rectangle "User" as U
+
+rectangle "3.1\n─────────────\nAnalyze\nImage"             as P31
+rectangle "3.2\n─────────────\nGenerate CLIP\nEmbedding"   as P32
+rectangle "3.3\n─────────────\nCompare with\nStored Posts" as P33
+rectangle "3.4\n─────────────\nGenerate Match\nResults"    as P34
+
+database "D1  Posts Database"   as D1
+database "Pinecone  Vector DB"  as Pin
+
+U   --> P31 : "Item Image"
+P31 --> P32 : "Image Features"
+P32 --> P33 : "Image Vector"
+P32 --> Pin : "Store Vector"
+Pin --> P33 : "Stored Vectors"
+D1  --> P33 : "Post Data"
+P33 --> P34 : "Match Candidates"
+P34 --> U   : "Match Results"
+
+@enduml

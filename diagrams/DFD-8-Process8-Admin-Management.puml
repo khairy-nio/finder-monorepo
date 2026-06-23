@@ -1,0 +1,40 @@
+@startuml DFD-8-Process8-Admin-Management
+title Level 2 — Process 8.0: Admin Management
+
+skinparam backgroundColor white
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam arrowFontSize 10
+skinparam arrowThickness 1.2
+skinparam rectangle { BorderColor black }
+skinparam database  { BorderColor black }
+
+left to right direction
+
+rectangle "Admin" as A
+
+rectangle "8.1\n─────────────\nAuthenticate\nAdmin"    as P81
+rectangle "8.2\n─────────────\nModerate\nPosts"        as P82
+rectangle "8.3\n─────────────\nManage\nUsers"          as P83
+rectangle "8.4\n─────────────\nGenerate\nAnalytics"    as P84
+
+database "D1  Posts Database" as D1
+database "D2  Users Database" as D2
+
+A   --> P81 : "Admin Credentials"
+P81 --> A   : "Error"
+P81 <--> D2 : "Verify Role"
+P81 --> P82 : "Admin Token"
+P81 --> P83 : "Admin Token"
+P81 --> P84 : "Admin Token"
+P82 <--> D1 : "Update Posts"
+P82 --> A   : "Result"
+P83 <--> D2 : "Update Users"
+P83 --> A   : "Result"
+P84 --> D1  : "Read Posts"
+P84 --> D2  : "Read Users"
+P84 --> A   : "Analytics Report"
+
+@enduml

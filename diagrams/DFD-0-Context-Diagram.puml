@@ -1,0 +1,25 @@
+@startuml DFD-0-Context-Diagram
+title Context Diagram (Level 0)
+
+skinparam backgroundColor white
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam arrowFontSize 11
+skinparam arrowThickness 1.2
+skinparam rectangle { BorderColor black }
+
+left to right direction
+
+rectangle "User"  as U
+rectangle "0\n─────────────\nLost & Found\nSystem" as S
+rectangle "Admin" as A
+
+U --> S : "Post Data / Search / Messages"
+S --> U : "Feed / Matches / Notifications"
+
+A --> S : "Moderation Actions"
+S --> A : "Reports & Analytics"
+
+@enduml

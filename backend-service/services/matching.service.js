@@ -277,7 +277,7 @@ class MatchingService {
                     };
                 })
                 .filter(Boolean)
-                .filter(res => res.match_percentage >= 75);
+                .filter(res => res.match_percentage >= 60);
 
             // Sort: High similarity first, then close distance
             enrichedResults.sort((a, b) => {

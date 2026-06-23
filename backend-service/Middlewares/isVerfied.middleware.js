@@ -19,8 +19,8 @@ const requireAuthentication = async (req, res, next) => {
 };
 
 /**
- * Middleware to check if user has verified identity (admin-approved)
- * Blocks actions like posting, chatting, and contact requests
+ * Middleware to check if user has verified identity (admin-approved).
+ * Valid statuses stored in DB: not_submitted | pending | approved | rejected
  * Must be used AFTER verfyFirebaseToken middleware
  */
 const requireVerification = async (req, res, next) => {
@@ -30,10 +30,9 @@ const requireVerification = async (req, res, next) => {
             return response.ErrorResponse(res, 'Authentication required', null, 401);
         }
 
-        // Check verification status
         const { verification_status, verified } = req.user;
 
-        // If verification not submitted
+        // Verification not submitted yet
         if (verification_status === 'not_submitted') {
             return response.ErrorResponse(
                 res,
@@ -43,7 +42,7 @@ const requireVerification = async (req, res, next) => {
             );
         }
 
-        // If verification pending
+        // Waiting for admin review
         if (verification_status === 'pending') {
             return response.ErrorResponse(
                 res,
@@ -53,7 +52,7 @@ const requireVerification = async (req, res, next) => {
             );
         }
 
-        // If verification rejected
+        // Admin rejected the documents
         if (verification_status === 'rejected') {
             return response.ErrorResponse(
                 res,
@@ -66,8 +65,8 @@ const requireVerification = async (req, res, next) => {
             );
         }
 
-        // If verification approved but verified flag not set
-        if ((verification_status === 'approved' || verification_status === 'accepted') && !verified) {
+        // Approved but verified flag is false — DB inconsistency, should never happen
+        if (verification_status === 'approved' && !verified) {
             return response.ErrorResponse(
                 res,
                 'Verification inconsistency detected. Please contact support.',
@@ -76,16 +75,16 @@ const requireVerification = async (req, res, next) => {
             );
         }
 
-        // If verified
-        if (verified && (verification_status === 'approved' || verification_status === 'accepted')) {
+        // ✅ Approved and verified — let the request through
+        if (verified && verification_status === 'approved') {
             return next();
         }
 
-        // Fallback for unexpected states
+        // Catch-all: unknown status value in DB
         return response.ErrorResponse(
             res,
-            'Verification status error',
-            null,
+            'Verification status unknown. Please contact support.',
+            { verification_status },
             500
         );
     } catch (error) {

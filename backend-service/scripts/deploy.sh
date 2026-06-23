@@ -11,8 +11,8 @@
 set -euo pipefail
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-KEY="${KEY:-$HOME/Desktop/keyyy.pem}"
-EC2_HOST="ec2-user@51.20.140.64"
+KEY="${KEY:-$HOME/Documents/newttesst.pem}"
+EC2_HOST="ec2-user@13.48.25.33"
 REMOTE_DIR="/home/ec2-user/backend-service"
 LOCAL_DIR="$(cd "$(dirname "$0")/.." && pwd)"  # backend-service/
 
@@ -41,6 +41,8 @@ echo ""
 echo "🚀 Running remote setup..."
 ssh -i "$KEY" -o StrictHostKeyChecking=no "$EC2_HOST" bash <<'REMOTE'
 set -euo pipefail
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" || true
 REMOTE_DIR="/home/ec2-user/backend-service"
 LOG_DIR="/home/ec2-user/logs"
 

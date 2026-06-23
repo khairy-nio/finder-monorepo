@@ -186,7 +186,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           height: 54,
                           borderRadius: AppSpacing.radiusMd,
                           backgroundColor: AppColors.neutral100,
-                          textColor: Theme.of(context).colorScheme.onSurface,
+                          textColor: AppColors.neutral900,
                         ),
                         const Spacer(),
                         // Terms note

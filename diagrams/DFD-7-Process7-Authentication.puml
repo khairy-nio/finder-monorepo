@@ -1,0 +1,35 @@
+@startuml DFD-7-Process7-Authentication
+title Level 2 — Process 7.0: User Authentication
+
+skinparam backgroundColor white
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam arrowFontSize 10
+skinparam arrowThickness 1.2
+skinparam rectangle { BorderColor black }
+skinparam database  { BorderColor black }
+
+left to right direction
+
+rectangle "User" as U
+
+rectangle "7.1\n─────────────\nValidate\nCredentials" as P71
+rectangle "7.2\n─────────────\nVerify with\nFirebase"  as P72
+rectangle "7.3\n─────────────\nSave User\nRecord"      as P73
+rectangle "7.4\n─────────────\nIssue\nAuth Token"      as P74
+
+database "D2  Users Database"  as D2
+database "Firebase  Auth"      as FB
+
+U   --> P71 : "Email / Google Token"
+P71 --> U   : "Error"
+P71 --> P72 : "Credentials"
+P72 <--> FB : "Verify Identity"
+P72 --> P73 : "User UID"
+P73 <--> D2 : "User Profile"
+P73 --> P74 : "Session Data"
+P74 --> U   : "JWT Token"
+
+@enduml

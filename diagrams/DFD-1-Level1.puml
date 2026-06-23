@@ -1,0 +1,67 @@
+@startuml DFD-1-Level1
+title Level 1 DFD
+
+skinparam backgroundColor white
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam arrowFontSize 10
+skinparam arrowThickness 1.2
+skinparam rectangle { BorderColor black }
+skinparam database  { BorderColor black }
+
+left to right direction
+
+rectangle "User"  as U
+rectangle "Admin" as A
+
+rectangle "7.0\n─────────────\nUser\nAuthentication"  as P7
+rectangle "1.0\n─────────────\nManage\nPosts"         as P1
+rectangle "2.0\n─────────────\nDisplay\nPosts Feed"   as P2
+rectangle "3.0\n─────────────\nAI Matching\nProcess"  as P3
+rectangle "4.0\n─────────────\nManage\nMessaging"     as P4
+rectangle "5.0\n─────────────\nManage\nNotifications" as P5
+rectangle "6.0\n─────────────\nView Post\nDetails"    as P6
+rectangle "8.0\n─────────────\nAdmin\nManagement"     as P8
+
+database "D1  Posts Database"         as D1
+database "D2  Users Database"         as D2
+database "D3  Messages Database"      as D3
+database "D4  Notifications Database" as D4
+
+U  --> P7 : "Login Data"
+P7 --> U  : "Auth Token"
+P7 <--> D2
+
+U  --> P1 : "Post Data"
+P1 --> U  : "Confirmation"
+P1 <--> D1
+P1 --> P3 : "Item Data"
+
+U  --> P2 : "Feed Request"
+P2 --> U  : "Posts Feed"
+P2 <--> D1
+
+P3 <--> D1
+P3 --> U  : "Match Results"
+P3 --> P6 : "Match Found"
+
+U  --> P6 : "Post Selection"
+P6 --> U  : "Post Details"
+P6 <--> D1
+
+U  --> P4 : "Message"
+P4 --> U  : "Chat Messages"
+P4 <--> D3
+P4 --> P5 : "Alert"
+
+P5 --> U  : "Notifications"
+P5 <--> D4
+
+A  --> P8 : "Moderation Actions"
+P8 --> A  : "Reports"
+P8 <--> D1
+P8 <--> D2
+
+@enduml

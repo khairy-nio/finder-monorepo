@@ -140,18 +140,26 @@ class _ClaimRequestModalState extends State<ClaimRequestModal> {
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _primary, width: 1.5)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 )),
-                if (_error != null) ...[const SizedBox(height: 8), Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13))],
                 const SizedBox(height: 24),
               ],
             ),
           ),
           SafeArea(child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: SizedBox(width: double.infinity, height: 52, child: ElevatedButton(
-              onPressed: _sending ? null : _submit,
-              style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white, disabledBackgroundColor: _primary.withOpacity(0.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
-              child: _sending ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)) : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.send_rounded, size: 18), SizedBox(width: 8), Text('Send Claim Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))]),
-            )),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_error != null) ...[
+                  Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
+                  const SizedBox(height: 12),
+                ],
+                SizedBox(width: double.infinity, height: 52, child: ElevatedButton(
+                  onPressed: _sending ? null : _submit,
+                  style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white, disabledBackgroundColor: _primary.withOpacity(0.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
+                  child: _sending ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5)) : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.send_rounded, size: 18), SizedBox(width: 8), Text('Send Claim Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))]),
+                )),
+              ],
+            ),
           )),
         ]),
       ),

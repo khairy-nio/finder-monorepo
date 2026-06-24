@@ -1223,6 +1223,7 @@ class _TierCard extends StatelessWidget {
               foregroundColor: canAfford ? Colors.white : Colors.grey.shade600,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              minimumSize: const Size(0, 36), // Override global infinite width constraint
               elevation: 0,
             ),
             child: const Text('Redeem', style: TextStyle(fontSize: 13)),

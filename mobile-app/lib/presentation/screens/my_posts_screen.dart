@@ -311,25 +311,39 @@ class _PostCard extends StatelessWidget {
                 // Image
                 ClipRRect(
                   borderRadius: AppSpacing.brMd,
-                  child: ColorFiltered(
-                    colorFilter: ColorFilter.mode(
-                      isBlocked ? Colors.grey : Colors.transparent,
-                      BlendMode.saturation,
-                    ),
-                    child: Image.network(
-                      post.imageUrl,
-                      width: 72,
-                      height: 72,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                  child: isBlocked 
+                    ? ColorFiltered(
+                        colorFilter: const ColorFilter.mode(
+                          Colors.grey,
+                          BlendMode.saturation,
+                        ),
+                        child: Image.network(
+                          post.imageUrl,
+                          width: 72,
+                          height: 72,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 72,
+                            height: 72,
+                            color: context.colors.neutral100,
+                            child: Icon(Icons.image_outlined,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                      )
+                    : Image.network(
+                        post.imageUrl,
                         width: 72,
                         height: 72,
-                        color: context.colors.neutral100,
-                        child: Icon(Icons.image_outlined,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 72,
+                          height: 72,
+                          color: context.colors.neutral100,
+                          child: Icon(Icons.image_outlined,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
                       ),
-                    ),
-                  ),
                 ),
 
                 const SizedBox(width: AppSpacing.md),
@@ -446,6 +460,7 @@ class _PostCard extends StatelessWidget {
                     foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                     side: BorderSide(color: Theme.of(context).colorScheme.outline),
                     padding: const EdgeInsets.symmetric(vertical: 10),
+                    minimumSize: Size.zero,
                     shape: RoundedRectangleBorder(
                         borderRadius: AppSpacing.brSm),
                   ),
@@ -467,6 +482,7 @@ class _PostCard extends StatelessWidget {
                       side: BorderSide(color: Theme.of(context).colorScheme.outline),
                       padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md, vertical: 10),
+                      minimumSize: Size.zero,
                       shape: RoundedRectangleBorder(
                           borderRadius: AppSpacing.brSm),
                     ),
@@ -485,6 +501,7 @@ class _PostCard extends StatelessWidget {
                         side: BorderSide(color: Theme.of(context).colorScheme.primary),
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.md, vertical: 10),
+                        minimumSize: Size.zero,
                         shape: RoundedRectangleBorder(
                             borderRadius: AppSpacing.brSm),
                       ),
@@ -511,6 +528,7 @@ class _PostCard extends StatelessWidget {
                         foregroundColor: AppColors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 10),
+                        minimumSize: Size.zero,
                         shape: RoundedRectangleBorder(
                             borderRadius: AppSpacing.brSm),
                       ),

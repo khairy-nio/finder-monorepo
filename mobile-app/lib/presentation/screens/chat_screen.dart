@@ -27,6 +27,7 @@ class ChatScreen extends StatefulWidget {
   final String? postStatus;
   final String? postId;
   final String? userAvatar;
+  final String? postOwnerId;
 
   const ChatScreen({
     super.key,
@@ -39,6 +40,7 @@ class ChatScreen extends StatefulWidget {
     this.postStatus,
     this.postId,
     this.userAvatar,
+    this.postOwnerId,
   });
 
   @override
@@ -57,6 +59,8 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _otherUserAvatar;
   String _currentUserId = '';
   late bool _isUserOnline;
+  String? _postStatus;
+  String? _fetchedPostOwnerId;
 
   late final ChatRemoteDataSource _dataSource;
   final SocketService _socketService = SocketService();
@@ -70,10 +74,23 @@ class _ChatScreenState extends State<ChatScreen> {
     _dataSource = ChatRemoteDataSourceImpl(apiClient: apiClient);
     _isUserOnline = widget.isOnline ?? false;
     _otherUserAvatar = widget.userAvatar;
+    _postStatus = widget.postStatus;
 
     _resolveCurrentUserId();
     _messageController.addListener(
-        () => setState(() => _hasText = _messageController.text.trim().isNotEmpty));
+      () => setState(() => _hasText = _messageController.text.trim().isNotEmpty),
+    );
+    _loadMessages();
+    _markAsRead();
+    _fetchMissingPostOwnerId();
+
+    // Debug Prints
+    debugPrint('=== CHAT SCREEN DEBUG ===');
+    debugPrint('Current User ID: $_currentUserId');
+    debugPrint('Post Owner ID: ${widget.postOwnerId}');
+    debugPrint('Post Status: $_postStatus');
+    debugPrint('Is Post Owner: ${_currentUserId.isNotEmpty && _currentUserId == widget.postOwnerId}');
+    debugPrint('=========================');
 
     if (widget.chatId != null) {
       _socketService.activeChatId = widget.chatId;
@@ -273,6 +290,87 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  Future<void> _fetchMissingPostOwnerId() async {
+    if (widget.postOwnerId != null) return;
+    if (widget.postId == null) return;
+
+    try {
+      final apiClient = ApiClient(tokenProvider: AuthService.instance.getIdToken);
+      final response = await apiClient.get('${ApiConstants.postDetailEndpoint}/${widget.postId}');
+      if (response['success'] == true && response['data'] != null) {
+        if (mounted) {
+          setState(() {
+            _fetchedPostOwnerId = response['data']['user_id'];
+          });
+          debugPrint('Fetched missing Post Owner ID: $_fetchedPostOwnerId');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching missing post owner id: $e');
+    }
+  }
+
+  Future<void> _resolvePost() async {
+    if (widget.postId == null) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Resolve Post'),
+        content: const Text(
+            'Are you sure you want to mark this item as resolved with this user? '
+            'This will close the post and award recovery points.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Resolve Post'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final apiClient = ApiClient(tokenProvider: AuthService.instance.getIdToken);
+      // Using PostRemoteDataSource dynamically here, alternatively we could add it to imports
+      // but to avoid massive import changes we can just do this:
+      final request = http.Request('PATCH', Uri.parse('${ApiConstants.baseUrl}/post/${widget.postId}/status'));
+      final token = await AuthService.instance.getIdToken();
+      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Content-Type'] = 'application/json';
+      request.body = '{"status": "resolved"}';
+      
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+      
+      if (!mounted) return;
+      Navigator.pop(context); // close loading dialog
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        setState(() => _postStatus = 'resolved');
+        AppMessenger.showSuccess('Post marked as resolved! Points awarded.');
+      } else {
+        AppMessenger.showError('Failed to resolve post.');
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        AppMessenger.showError('Failed to resolve post.');
+      }
+    }
+  }
+
   String _formatTime(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
@@ -394,8 +492,10 @@ class _ChatScreenState extends State<ChatScreen> {
             _PostContextBar(
               title: widget.postTitle!,
               imageUrl: widget.postImage,
-              status: widget.postStatus,
+              status: _postStatus,
               postId: widget.postId,
+              isPostOwner: _currentUserId.isNotEmpty && _currentUserId == (widget.postOwnerId ?? _fetchedPostOwnerId),
+              onResolve: _resolvePost,
             ),
 
           // Messages list
@@ -496,9 +596,17 @@ class _PostContextBar extends StatelessWidget {
   final String? imageUrl;
   final String? status;
   final String? postId;
+  final bool isPostOwner;
+  final VoidCallback? onResolve;
 
-  const _PostContextBar(
-      {required this.title, this.imageUrl, this.status, this.postId});
+  const _PostContextBar({
+    required this.title,
+    this.imageUrl,
+    this.status,
+    this.postId,
+    this.isPostOwner = false,
+    this.onResolve,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -551,6 +659,27 @@ class _PostContextBar extends StatelessWidget {
               ),
             ),
           ),
+          if (isPostOwner && (status ?? '').toLowerCase() != 'resolved' && (status ?? '').toLowerCase() != 'closed') ...[
+            const SizedBox(width: AppSpacing.sm),
+            OutlinedButton(
+              onPressed: onResolve,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                minimumSize: const Size(0, 26),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusFull)),
+              ),
+              child: Text(
+                'Resolve Post',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

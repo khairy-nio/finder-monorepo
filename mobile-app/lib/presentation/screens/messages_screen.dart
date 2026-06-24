@@ -268,6 +268,7 @@ class _ChatTile extends StatelessWidget {
           'postStatus': post?['status'],
           'postId': post?['id'],
           'userAvatar': otherAvatar,
+          'postOwnerId': post?['user_id'],
         },
       ),
       child: Column(

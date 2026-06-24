@@ -54,7 +54,7 @@ class ChatRepo {
                     {
                         model: require('../models/post.model'),
                         as: 'post',
-                        attributes: ['id', 'title', 'image_url', 'status']
+                        attributes: ['id', 'title', 'image_url', 'status', 'user_id']
                     }
                 ]
             });
@@ -109,7 +109,7 @@ class ChatRepo {
                     {
                         model: require('../models/post.model'),
                         as: 'post',
-                        attributes: ['id', 'title', 'image_url', 'status']
+                        attributes: ['id', 'title', 'image_url', 'status', 'user_id']
                     }
                 ],
                 limit,
@@ -258,7 +258,7 @@ class ChatRepo {
                     {
                         model: require('../models/post.model'),
                         as: 'post',
-                        attributes: ['id', 'title', 'image_url', 'status']
+                        attributes: ['id', 'title', 'image_url', 'status', 'user_id']
                     }
                 ]
             });

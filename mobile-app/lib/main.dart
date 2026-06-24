@@ -22,9 +22,17 @@ import 'routes/app_routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  debugPrint("=== App startup: widget binding initialized ===");
+  try {
+    debugPrint("=== App startup: initializing Firebase ===");
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint("=== App startup: Firebase initialized successfully ===");
+  } catch (e) {
+    debugPrint("=== App startup: Firebase initialization failed: $e ===");
+  }
+  debugPrint("=== App startup: running app ===");
   runApp(const MyApp());
 }
 

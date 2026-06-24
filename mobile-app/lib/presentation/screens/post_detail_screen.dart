@@ -730,6 +730,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             'userName': posterName,
                             'userId': userId,
                             'isOnline': false,
+                            'postOwnerId': userId,
                           });
                         } else {
                           AppMessenger.showError('Chat not found even though request was accepted.');

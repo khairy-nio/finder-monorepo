@@ -143,6 +143,7 @@ class AppRoutes {
             postStatus: args?['postStatus'] as String?,
             postId: args?['postId'] as String?,
             userAvatar: args?['userAvatar'] as String?,
+            postOwnerId: args?['postOwnerId'] as String?,
           ),
         );
 

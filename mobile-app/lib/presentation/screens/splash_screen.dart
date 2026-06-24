@@ -40,37 +40,56 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _checkSessionAndNavigate() async {
+    debugPrint("=== SplashScreen: checking session... ===");
     // Brief branded moment
     await Future.delayed(const Duration(milliseconds: 1400));
 
-    final isValidSession = await SessionService.instance.isSessionValid();
-    final user = AuthService.instance.currentUser;
+    try {
+      debugPrint("=== SplashScreen: calling isSessionValid... ===");
+      final isValidSession = await SessionService.instance.isSessionValid();
+      debugPrint("=== SplashScreen: isSessionValid returned: $isValidSession ===");
+      final user = AuthService.instance.currentUser;
+      debugPrint("=== SplashScreen: currentUser = $user ===");
 
-    if (!mounted) return;
+      if (!mounted) {
+        debugPrint("=== SplashScreen: Widget not mounted, aborting navigation ===");
+        return;
+      }
 
-    if (isValidSession && user != null) {
-      try {
-        await context.read<UserProvider>().loadUser();
-      } catch (_) {}
+      if (isValidSession && user != null) {
+        debugPrint("=== SplashScreen: Session is valid, loading backend user... ===");
+        try {
+          await context.read<UserProvider>().loadUser();
+          debugPrint("=== SplashScreen: Backend user loaded successfully ===");
+        } catch (e) {
+          debugPrint("=== SplashScreen: Loading backend user failed: $e ===");
+        }
 
-      if (!mounted) return;
-      final backendUser = context.read<UserProvider>().backendUser;
-      if (backendUser != null &&
-          (backendUser.status == 'suspended' || backendUser.status == 'banned')) {
-        Navigator.pushReplacementNamed(
-          context,
-          '/moderation-status',
-          arguments: backendUser.status,
-        );
+        if (!mounted) return;
+        final backendUser = context.read<UserProvider>().backendUser;
+        debugPrint("=== SplashScreen: Backend user status = ${backendUser?.status} ===");
+        if (backendUser != null &&
+            (backendUser.status == 'suspended' || backendUser.status == 'banned')) {
+          debugPrint("=== SplashScreen: Navigating to moderation status page ===");
+          Navigator.pushReplacementNamed(
+            context,
+            '/moderation-status',
+            arguments: backendUser.status,
+          );
+        } else {
+          debugPrint("=== SplashScreen: Navigating to home page ===");
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       } else {
-        Navigator.pushReplacementNamed(context, '/home');
+        debugPrint("=== SplashScreen: Session invalid or no user, clearing and navigating to welcome ===");
+        await SessionService.instance.clearSession();
+        await AuthService.instance.signOut();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/welcome');
+        }
       }
-    } else {
-      await SessionService.instance.clearSession();
-      await AuthService.instance.signOut();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/welcome');
-      }
+    } catch (e) {
+      debugPrint("=== SplashScreen: Fatal session check error: $e ===");
     }
   }
 

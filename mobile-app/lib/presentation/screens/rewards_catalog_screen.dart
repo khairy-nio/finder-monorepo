@@ -357,43 +357,45 @@ class _RewardsCatalogScreenState extends State<RewardsCatalogScreen>
       ),
       body: Stack(
         children: [
-          Column(
-            children: [
-              // ── Header Card ────────────────────────────────────────────
-              _buildHeader(points, summary),
+          Positioned.fill(
+            child: Column(
+              children: [
+                // ── Header Card ────────────────────────────────────────────
+                _buildHeader(points, summary),
 
-              // ── Tab Bar ────────────────────────────────────────────────
-              Container(
-                color: Colors.white,
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorColor: const Color(0xFF0A3D91),
-                  labelColor: const Color(0xFF0A3D91),
-                  unselectedLabelColor: Colors.grey,
-                  indicatorWeight: 3,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                  tabs: const [
-                    Tab(text: 'Wallet'),
-                    Tab(text: 'Cash Out'),
-                    Tab(text: 'History'),
-                  ],
+                // ── Tab Bar ────────────────────────────────────────────────
+                Container(
+                  color: Colors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: const Color(0xFF0A3D91),
+                    labelColor: const Color(0xFF0A3D91),
+                    unselectedLabelColor: Colors.grey,
+                    indicatorWeight: 3,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    tabs: const [
+                      Tab(text: 'Wallet'),
+                      Tab(text: 'Cash Out'),
+                      Tab(text: 'History'),
+                    ],
+                  ),
                 ),
-              ),
 
-              // ── Tab Views ──────────────────────────────────────────────
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF0A3D91)))
-                    : TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildWalletTab(points),
-                          _buildCashOutTab(points),
-                          _buildHistoryTab(),
-                        ],
-                      ),
-              ),
-            ],
+                // ── Tab Views ──────────────────────────────────────────────
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator(color: Color(0xFF0A3D91)))
+                      : TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildWalletTab(points),
+                            _buildCashOutTab(points),
+                            _buildHistoryTab(),
+                          ],
+                        ),
+                ),
+              ],
+            ),
           ),
 
           // ── Submission overlay ────────────────────────────────────────

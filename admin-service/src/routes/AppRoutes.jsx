@@ -10,6 +10,7 @@ import Users from '../pages/users/Users';
 import Reports from '../pages/reports/Reports';
 import Verification from '../pages/verification/Verification';
 import Posts from '../pages/posts/Posts';
+import Redemptions from '../pages/redemptions/Redemptions';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -40,6 +41,7 @@ export default function AppRoutes() {
         <Route path="reports" element={<Reports />} />
         <Route path="verification" element={<Verification />} />
         <Route path="posts" element={<Posts />} />
+        <Route path="redemptions" element={<Redemptions />} />
       </Route>
       
       <Route path="*" element={<Navigate to="/" replace />} />

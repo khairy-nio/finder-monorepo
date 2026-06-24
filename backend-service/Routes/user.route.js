@@ -5,38 +5,37 @@ const { verfyFirebaseToken, verfyFirebaseTokenLite } = require('../Middlewares/a
 const { requireAuthentication } = require('../Middlewares/isVerfied.middleware');
 const { createUserValidator, updateUserValidator } = require('../validators/user.validator');
 const { submitVerificationValidator } = require('../validators/verification.validator');
+const { createRedemptionValidator } = require('../validators/redemption.validator');
 const { uploadKycMiddleware, uploadVerificationToCloudinary } = require('../Middlewares/multer.middleware');
 const validate = require('../Middlewares/validation');
-const express =require('express');
+const express = require('express');
 const Router = express.Router();
 
 /**
  * @route   POST /api/v1/user/login
  * @desc    Login or register user after Firebase authentication
  * @access  Public (requires Firebase token)
- * @body    { name, email }
  */
 Router.post('/login',
-       verfyFirebaseTokenLite,
-      createUserValidator, 
-      validate,
-       authController.login);
+    verfyFirebaseTokenLite,
+    createUserValidator,
+    validate,
+    authController.login);
 
 Router.use(verfyFirebaseToken);
-Router.use(requireAuthentication); 
+Router.use(requireAuthentication);
 
 /**
  * @route   GET /api/v1/user/me
  * @desc    Get current user profile
- * @access  Private (requires authentication)
+ * @access  Private
  */
-Router.get('/me',      
-       UserController.getprofile);
+Router.get('/me', UserController.getprofile);
 
 /**
  * @route   POST /api/v1/user/upload-image
- * @desc    Upload an image (e.g. for profile or selfie)
- * @access  Private (requires authentication)
+ * @desc    Upload an image (profile / selfie)
+ * @access  Private
  */
 const { uploadMiddleware, uploadToCloudinary } = require('../Middlewares/multer.middleware');
 Router.post('/upload-image',
@@ -52,27 +51,24 @@ Router.post('/upload-image',
 /**
  * @route   PUT /api/v1/user/me
  * @desc    Update current user profile
- * @access  Private (requires authentication)
- * @body    { name, phone }
+ * @access  Private
  */
 Router.put('/me',
-       updateUserValidator,
-       validate,
-       UserController.editprofile);
+    updateUserValidator,
+    validate,
+    UserController.editprofile);
 
 /**
  * @route   DELETE /api/v1/user/me
  * @desc    Delete current user account
- * @access  Private (requires authentication)
+ * @access  Private
  */
-Router.delete('/me',
-       UserController.deleteprofile);
+Router.delete('/me', UserController.deleteprofile);
 
 /**
  * @route   POST /api/v1/user/verification/submit
  * @desc    Submit identity verification documents
- * @access  Private (requires authentication)
- * @body    { national_id, phone_number, id_image_url }
+ * @access  Private
  */
 Router.post('/verification/submit',
     uploadKycMiddleware,
@@ -84,30 +80,55 @@ Router.post('/verification/submit',
 /**
  * @route   GET /api/v1/user/verification/status
  * @desc    Get current user's verification status
- * @access  Private (requires authentication)
+ * @access  Private
  */
 Router.get('/verification/status', UserController.getVerificationStatus);
 
+// ─── Recovery Points ──────────────────────────────────────────────────────────
+
+/**
+ * @route   GET /api/v1/user/me/points
+ * @desc    Get current user's points balance + summary stats
+ * @access  Private
+ * @returns { current_balance, total_earned, total_redeemed, pending_redemptions, pending_points, pending_egp }
+ */
+Router.get('/me/points', UserController.getPointsSummary);
+
 /**
  * @route   GET /api/v1/user/me/points/history
- * @desc    Get current user's recovery points transaction history
- * @access  Private (requires authentication)
+ * @desc    Get current user's recovery points transaction history (paginated)
+ * @access  Private
+ * @query   ?limit=30&offset=0
  */
 Router.get('/me/points/history', UserController.getPointsHistory);
 
 /**
- * @route   GET /api/v1/user/me/redemptions
- * @desc    Get current user's redeemed rewards history
- * @access  Private (requires authentication)
+ * @route   GET /api/v1/user/me/points/tiers
+ * @desc    Get available cash redemption tiers
+ * @access  Private
+ * @returns { points_per_egp, wallet_providers, tiers: [{ points, cash_amount_egp, label, description }] }
  */
-Router.get('/me/redemptions', UserController.getRedemptionsHistory);
+Router.get('/me/points/tiers', UserController.getAvailableTiers);
+
+// ─── Wallet Cash Redemption ───────────────────────────────────────────────────
 
 /**
  * @route   POST /api/v1/user/me/redeem
- * @desc    Redeem a catalog reward using recovery points
- * @access  Private (requires authentication)
+ * @desc    Submit a wallet cash redemption request
+ * @access  Private
+ * @body    { tier_points: 500|1000|1500|2000, wallet_provider: string, wallet_number: string }
  */
-Router.post('/me/redeem', UserController.redeemReward);
+Router.post('/me/redeem',
+    createRedemptionValidator,
+    validate,
+    UserController.redeemCash);
 
-module.exports=Router;
+/**
+ * @route   GET /api/v1/user/me/redemptions
+ * @desc    Get current user's wallet cash redemption history (paginated)
+ * @access  Private
+ * @query   ?limit=30&offset=0
+ */
+Router.get('/me/redemptions', UserController.getRedemptionsHistory);
 
+module.exports = Router;

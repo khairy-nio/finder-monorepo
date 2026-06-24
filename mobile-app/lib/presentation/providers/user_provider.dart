@@ -12,13 +12,17 @@ class UserProvider with ChangeNotifier {
   UserProvider({required UserRemoteDataSource remoteDataSource})
       : _remoteDataSource = remoteDataSource;
 
-  // ── State ────────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────────────
   User? _backendUser;
+  PointsSummary? _pointsSummary;
+  Map<String, dynamic>? _cashTiersData;
   bool _isLoading = false;
   String? _error;
 
-  // ── Getters ──────────────────────────────────────────────────
+  // ── Getters ───────────────────────────────────────────────────────────────
   User? get backendUser => _backendUser;
+  PointsSummary? get pointsSummary => _pointsSummary;
+  Map<String, dynamic>? get cashTiersData => _cashTiersData;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -28,13 +32,9 @@ class UserProvider with ChangeNotifier {
   /// Whether the backend user is an admin.
   bool get isAdmin => _backendUser?.isAdmin ?? false;
 
-  // ── Actions ──────────────────────────────────────────────────
+  // ── Profile ───────────────────────────────────────────────────────────────
 
   /// Fetches the authenticated user from GET /user/me and stores it.
-  ///
-  /// Errors are caught silently — callers can check [error] if needed.
-  /// Screens should degrade gracefully (fall back to Firebase data) when
-  /// [backendUser] is null.
   Future<void> loadUser() async {
     _isLoading = true;
     _error = null;
@@ -48,7 +48,6 @@ class UserProvider with ChangeNotifier {
     } catch (e) {
       _error = e.toString();
       debugPrint('[UserProvider] Failed to load user: $e');
-      // Non-fatal — backendUser stays null; screens will use Firebase fallback.
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -58,43 +57,105 @@ class UserProvider with ChangeNotifier {
   /// Clears the stored user — call this on logout.
   void clear() {
     _backendUser = null;
+    _pointsSummary = null;
+    _cashTiersData = null;
     _isLoading = false;
     _error = null;
     notifyListeners();
     debugPrint('[UserProvider] User state cleared.');
   }
 
-  /// Fetches points history
-  Future<List<Map<String, dynamic>>> getPointsHistory() async {
+  // ── Recovery Points ───────────────────────────────────────────────────────
+
+  /// Fetches the points balance + summary stats from GET /user/me/points.
+  /// Returns the [PointsSummary] or null on failure.
+  Future<PointsSummary?> loadPointsSummary() async {
     try {
-      return await _remoteDataSource.fetchPointsHistory();
+      final summary = await _remoteDataSource.fetchPointsSummary();
+      _pointsSummary = summary;
+      notifyListeners();
+      return summary;
+    } catch (e) {
+      debugPrint('[UserProvider] Failed to fetch points summary: $e');
+      return null;
+    }
+  }
+
+  /// Fetches paginated points transaction history.
+  Future<List<Map<String, dynamic>>> getPointsHistory({
+    int limit = 30,
+    int offset = 0,
+  }) async {
+    try {
+      return await _remoteDataSource.fetchPointsHistory(
+        limit: limit,
+        offset: offset,
+      );
     } catch (e) {
       debugPrint('[UserProvider] Failed to fetch points history: $e');
       return [];
     }
   }
 
-  /// Fetches redemptions history
-  Future<List<Map<String, dynamic>>> getRedemptions() async {
+  /// Fetches available cash redemption tiers from GET /user/me/points/tiers.
+  /// Returns the raw data map including: tiers list, wallet_providers, points_per_egp.
+  Future<Map<String, dynamic>> getCashTiers() async {
     try {
-      return await _remoteDataSource.fetchRedemptions();
+      final data = await _remoteDataSource.fetchCashTiers();
+      _cashTiersData = data;
+      notifyListeners();
+      return data;
+    } catch (e) {
+      debugPrint('[UserProvider] Failed to fetch cash tiers: $e');
+      return {};
+    }
+  }
+
+  // ── Wallet Cash Redemption ────────────────────────────────────────────────
+
+  /// Submit a wallet cash redemption request.
+  ///
+  /// [tierPoints]     — must be one of 500 | 1000 | 1500 | 2000
+  /// [walletProvider] — e.g. 'vodafone_cash', 'instapay', etc.
+  /// [walletNumber]   — user's mobile wallet number
+  ///
+  /// Returns the response data map on success, or null on failure.
+  /// Call [loadUser] and [loadPointsSummary] after a successful redemption
+  /// to sync the points balance.
+  Future<Map<String, dynamic>?> redeemCash({
+    required int tierPoints,
+    required String walletProvider,
+    required String walletNumber,
+  }) async {
+    try {
+      final data = await _remoteDataSource.redeemCash(
+        tierPoints:     tierPoints,
+        walletProvider: walletProvider,
+        walletNumber:   walletNumber,
+      );
+      // Sync the points balance immediately after a successful redemption
+      await loadUser();
+      await loadPointsSummary();
+      return data;
+    } catch (e) {
+      debugPrint('[UserProvider] Failed to redeem cash: $e');
+      return null;
+    }
+  }
+
+  /// Fetches the user's wallet cash redemption history.
+  Future<List<Map<String, dynamic>>> getRedemptions({
+    int limit = 30,
+    int offset = 0,
+  }) async {
+    try {
+      return await _remoteDataSource.fetchRedemptions(
+        limit: limit,
+        offset: offset,
+      );
     } catch (e) {
       debugPrint('[UserProvider] Failed to fetch redemptions: $e');
       return [];
     }
   }
-
-  /// Redeem a reward from the catalog
-  Future<bool> redeemReward(String rewardId) async {
-    try {
-      await _remoteDataSource.redeemReward(rewardId);
-      // Re-fetch user profile to sync the points balance instantly in the App Header!
-      await loadUser();
-      return true;
-    } catch (e) {
-      debugPrint('[UserProvider] Failed to redeem reward: $e');
-      return false;
-    }
-  }
 }
-

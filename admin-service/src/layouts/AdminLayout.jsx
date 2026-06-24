@@ -32,6 +32,7 @@ import {
   PeopleRounded as UsersIcon,
   ReportRounded as ReportsIcon,
   SecurityRounded as VerifyIcon,
+  AccountBalanceWalletRounded as RedemptionIcon,
 } from '@mui/icons-material';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
@@ -39,11 +40,12 @@ import { useAuth } from '../providers/authContext';
 import { useThemeMode } from '../providers/themeModeContext';
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-  { text: 'Users', icon: <UsersIcon />, path: '/users' },
-  { text: 'Verifications', icon: <VerifyIcon />, path: '/verification' },
-  { text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
-  { text: 'Posts', icon: <PostsIcon />, path: '/posts' },
+  { text: 'Dashboard',   icon: <DashboardIcon />,  path: '/dashboard' },
+  { text: 'Users',       icon: <UsersIcon />,       path: '/users' },
+  { text: 'Verifications', icon: <VerifyIcon />,    path: '/verification' },
+  { text: 'Reports',     icon: <ReportsIcon />,     path: '/reports' },
+  { text: 'Posts',       icon: <PostsIcon />,       path: '/posts' },
+  { text: 'Redemptions', icon: <RedemptionIcon />,  path: '/redemptions' },
 ];
 
 export default function AdminLayout() {
@@ -236,7 +238,7 @@ export default function AdminLayout() {
                 <Box sx={{ p: 2.5, pb: 1.5 }}>
                   <Typography variant="h6" fontWeight={800}>Notifications</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Pending verifications & reports
+                    Pending verifications, reports & redemptions
                   </Typography>
                 </Box>
                 <Divider />
@@ -261,9 +263,17 @@ export default function AdminLayout() {
                             <Box sx={{ width: '100%' }}>
                               <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
                                 <Chip
-                                  label={item.type === 'verification' ? 'Verification' : 'Report'}
+                                  label={
+                                    item.type === 'verification' ? 'Verification' 
+                                    : item.type === 'redemption' ? 'Redemption'
+                                    : 'Report'
+                                  }
                                   size="small"
-                                  color={item.type === 'verification' ? 'primary' : 'error'}
+                                  color={
+                                    item.type === 'verification' ? 'primary' 
+                                    : item.type === 'redemption' ? 'warning'
+                                    : 'error'
+                                  }
                                   sx={{ height: 20, fontSize: 10, fontWeight: 700 }}
                                 />
                                 <Typography variant="caption" color="text.disabled">

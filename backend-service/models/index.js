@@ -84,17 +84,24 @@ AdminAction.belongsTo(User, { foreignKey: 'admin_id', as: 'admin' });
 
 // ========== RECOVERY POINTS RELATIONSHIPS ==========
 const RecoveryPointTransaction = require('./RecoveryPointTransaction.model');
-const RecoveryRedemption = require('./RecoveryRedemption.model');
+// WalletRedemption replaced the old RecoveryRedemption model
+const WalletRedemption = require('./RecoveryRedemption.model');
 
+// User ↔ point transaction ledger
 User.hasMany(RecoveryPointTransaction, { foreignKey: 'user_id', as: 'pointTransactions', onDelete: 'CASCADE' });
 RecoveryPointTransaction.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
+// Post ↔ point transactions (for recovery awards)
 Post.hasMany(RecoveryPointTransaction, { foreignKey: 'post_id', as: 'pointTransactions', onDelete: 'SET NULL' });
 RecoveryPointTransaction.belongsTo(Post, { foreignKey: 'post_id', as: 'associatedPost' });
 
+// User ↔ wallet redemption requests
+User.hasMany(WalletRedemption, { foreignKey: 'user_id', as: 'walletRedemptions', onDelete: 'CASCADE' });
+WalletRedemption.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-User.hasMany(RecoveryRedemption, { foreignKey: 'user_id', as: 'redemptions', onDelete: 'CASCADE' });
-RecoveryRedemption.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+// Admin user who processed the redemption (nullable FK)
+User.hasMany(WalletRedemption, { foreignKey: 'processed_by_admin_id', as: 'processedRedemptions', onDelete: 'SET NULL' });
+WalletRedemption.belongsTo(User, { foreignKey: 'processed_by_admin_id', as: 'processedBy' });
 
 // Export all models
 module.exports = {
@@ -109,5 +116,8 @@ module.exports = {
     AdminAction,
     UserVerification,
     RecoveryPointTransaction,
-    RecoveryRedemption
-};
+    // Exported as both the internal model name AND the legacy alias
+    // so any file importing RecoveryRedemption still works during transition.
+    WalletRedemption,
+    RecoveryRedemption: WalletRedemption,   // backward-compat alias
+};

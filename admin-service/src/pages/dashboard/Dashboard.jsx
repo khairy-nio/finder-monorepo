@@ -283,7 +283,7 @@ export default function Dashboard() {
         </Box>
         <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 3' } }}>
           <StatCard 
-            title="Recovery Points" 
+            title="Recovery Points Issued" 
             value={stats?.totalRecoveryPoints || 0} 
             icon={<PointsIcon />} 
             color="#FF9900" 
@@ -292,8 +292,8 @@ export default function Dashboard() {
         </Box>
         <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 3' } }}>
           <StatCard 
-            title="Redemptions" 
-            value={stats?.totalRewardsRedeemed || 0} 
+            title="Total Redemptions" 
+            value={stats?.totalRedemptionsCount || 0} 
             icon={<GiftIcon />} 
             color="#146B93" 
             delay={0.6}
